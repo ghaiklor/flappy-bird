@@ -8,7 +8,7 @@
             GRAVITY = 1800,
             BIRD_FLAP = 550,
             TOWER_SPAWN_INTERVAL = 2000,
-            AVAILABLE_SPACE_BETWEEN_TOWERS = 130,
+            AVAILABLE_SPACE_BETWEEN_TOWERS = 150,
             CLOUDS_SHOW_MIN_TIME = 5000,
             CLOUDS_SHOW_MAX_TIME = 10000,
             MAX_DIFFICULT = 50,
@@ -35,10 +35,7 @@
         //////////////////////////////////
         //VARIABLES FOR GAME-MANAGEMENT //
         //////////////////////////////////
-        var isGameStarted = false,
-            isGameOver = false,
-            gameScore = 0;
-
+        var gameScore = 0;
 
         ////////////////////////////////////////////
         //State - BootGame (Loading text appears) //
@@ -58,10 +55,6 @@
             Game.state.start('Preloader', false, false);
         };
 
-        BootGameState.update = function() {
-            LoadingText.angle = 10 * Math.cos(Game.time.now / 100);
-        };
-
         /////////////////////////////////////
         //State - Preloader (Loading Assets) //
         /////////////////////////////////////
@@ -69,11 +62,16 @@
 
         PreloaderGameState.preload = function() {
             loadAssets();
-            Game.state.start('MainMenu');
         };
 
-        PreloaderGameState.update = function() {
-            LoadingText.angle = 10 * Math.cos(Game.time.now / 100);
+        PreloaderGameState.create = function() {
+            var tween = Game.add.tween(LoadingText).to({
+                alpha: 0
+            }, 1000, Phaser.Easing.Linear.None, true);
+
+            tween.onComplete.add(function() {
+                Game.state.start('MainMenu');
+            }, this);
         };
 
         //////////////////////
@@ -86,13 +84,12 @@
         };
 
         MainMenuState.create = function() {
-            isGameStarted = false;
-            isGameOver = false;
             gameScore = 0;
 
             createBackground();
             createRain();
             createClouds();
+            createTowers(false);
             createFence();
             createBird();
             createTexts();
@@ -115,9 +112,9 @@
             });
 
             // TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+            // InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
             Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
             TitleText.angle = 5 * Math.cos(Game.time.now / 100);
-            InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
         };
 
         /////////////////////////////////////
@@ -125,23 +122,8 @@
         /////////////////////////////////////
         var GameState = new Phaser.State();
 
-        GameState.preload = function() {
-            // loadAssets();
-        };
-
         GameState.create = function() {
-            isGameStarted = true;
-
-            // createBackground();
-            // createRain();
-            // createClouds();
-            createTowers();
-            // createFence();
-            // createBird();
-            // createTexts();
-            // createSounds();
-
-            Game.input.onDown.add(birdFlap);
+            createTowers(true);
 
             TitleText.renderable = false;
             InstructionsText.renderable = false;
@@ -152,11 +134,11 @@
 
             Bird.body.allowGravity = true;
 
+            Game.input.onDown.add(birdFlap);
         };
 
         GameState.update = function() {
-            var divingInAir = BIRD_FLAP + Bird.body.velocity.y;
-            Bird.angle = (90 * divingInAir / BIRD_FLAP) - 180;
+            Bird.angle = (90 * (BIRD_FLAP + Bird.body.velocity.y) / BIRD_FLAP) - 180;
             if (Bird.angle < -30) {
                 Bird.angle = -30;
             } else if (Bird.angle > 30) {
@@ -173,11 +155,19 @@
 
             Game.physics.overlap(Bird, FreeSpacesInTowers, addScore);
 
+            Clouds.forEachAlive(function(cloud) {
+                if (cloud.x + cloud.width < Game.world.bounds.left) {
+                    cloud.kill();
+                }
+            });
+
             Towers.forEachAlive(function(tower) {
                 if (tower.x + tower.width < Game.world.bounds.left) {
                     tower.kill();
                 }
             });
+
+            ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
         };
 
         GameState.render = function() {
@@ -205,23 +195,10 @@
         //////////////////////////////////
         var GameOverState = new Phaser.State();
 
-        GameOverState.preload = function() {
-            // loadAssets();
-        };
-
         GameOverState.create = function() {
-            isGameOver = true;
+            Game.input.onDown.remove(birdFlap);
 
-            // createBackground();
-            // createRain();
-            // createClouds();
-            // createFence();
-            // createBird();
-            // createTexts();
-
-            Game.input.onDown.add(function() {
-                Game.state.start('MainMenu', true, false);
-            });
+            HurtSound.play();
 
             Towers.forEachAlive(function(tower) {
                 tower.body.velocity.x = 0;
@@ -232,15 +209,28 @@
             });
 
             TowersTimer.stop();
-            HurtSound.play();
+
+            TitleText.renderable = false;
+            AboutText.renderable = false;
             ScoreText.renderable = false;
             HighScoreText.renderable = true;
-            InstructionsText.renderable = true;
-            InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
             HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\nYOUR SCORE: " + gameScore);
+
             Bird.angle = 180;
             Bird.animations.stop();
             Bird.frame = 3;
+
+            setTimeout(function() {
+                InstructionsText.renderable = true;
+                InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
+                Game.input.onDown.addOnce(function() {
+                    Game.state.start('MainMenu', true, false);
+                });
+            }, 2000);
+        };
+
+        GameOverState.update = function() {
+            HighScoreText.angle = 5 * Math.cos(Game.time.now / 100);
         };
 
         ///////////////////
@@ -357,12 +347,13 @@
             Bird.animations.play('flying');
             Bird.body.collideWorldBounds = true;
             Bird.body.gravity.y = GRAVITY;
+            Bird.body.allowGravity = false;
         };
 
         //////////////////
         //Create towers //
         //////////////////
-        var createTowers = function createTowers() {
+        var createTowers = function createTowers(timer) {
             function calcDifficult() {
                 return AVAILABLE_SPACE_BETWEEN_TOWERS + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
             }
@@ -391,11 +382,14 @@
                 TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
             }
 
-            Towers = Game.add.group();
-            FreeSpacesInTowers = Game.add.group();
-            TowersTimer = Game.time.create(false);
-            TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
-            TowersTimer.start();
+            if (timer) {
+                TowersTimer = Game.time.create(false);
+                TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
+                TowersTimer.start();
+            } else {
+                Towers = Game.add.group();
+                FreeSpacesInTowers = Game.add.group();
+            }
         };
 
         /////////////////
@@ -413,10 +407,10 @@
             TitleText.angle = 5;
 
             AboutText = Game.add.text(Game.world.width - 10, 10, ABOUT_TEXT, {
-                font: '14px "Press Start 2P"',
+                font: '13px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
-                strokeThickness: 3,
+                strokeThickness: 2,
                 align: 'center'
             });
             AboutText.anchor.x = 1;
