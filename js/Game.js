@@ -99,6 +99,7 @@
             createSounds();
 
             Game.input.onDown.addOnce(function() {
+                birdFlap();
                 Game.state.start('Game', false, false);
             });
         };
@@ -242,11 +243,17 @@
             Bird.frame = 3;
         };
 
+        ///////////////////
+        //Make bird flap //
+        ///////////////////
         var birdFlap = function birdFlap() {
             Bird.body.velocity.y = -BIRD_FLAP;
             FlapSound.play();
         };
 
+        ////////////////////////////////////
+        // Add score to current gameScore //
+        ////////////////////////////////////
         var addScore = function addScore(_, spaceInTower) {
             FreeSpacesInTowers.remove(spaceInTower);
             ++gameScore;
@@ -254,6 +261,9 @@
             ScoreSound.play();
         };
 
+        ///////////////////
+        // Get highscore //
+        ///////////////////
         var getHighscore = function getHighscore(score) {
             var highscore = window.localStorage.getItem('highscore');
             if (score > highscore || highscore === null) {
