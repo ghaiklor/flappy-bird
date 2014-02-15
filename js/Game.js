@@ -39,7 +39,6 @@
             isGameOver = false,
             gameScore = 0;
 
-
         ////////////////////////////////////////////
         //State - BootGame (Loading text appears) //
         ////////////////////////////////////////////
@@ -93,6 +92,7 @@
             createBackground();
             createRain();
             createClouds();
+            createTowers(false);
             createFence();
             createBird();
             createTexts();
@@ -125,21 +125,10 @@
         /////////////////////////////////////
         var GameState = new Phaser.State();
 
-        GameState.preload = function() {
-            // loadAssets();
-        };
-
         GameState.create = function() {
             isGameStarted = true;
 
-            // createBackground();
-            // createRain();
-            // createClouds();
-            createTowers();
-            // createFence();
-            // createBird();
-            // createTexts();
-            // createSounds();
+            createTowers(true);
 
             Game.input.onDown.add(birdFlap);
 
@@ -151,7 +140,6 @@
             ScoreText.setText(gameScore);
 
             Bird.body.allowGravity = true;
-
         };
 
         GameState.update = function() {
@@ -205,23 +193,8 @@
         //////////////////////////////////
         var GameOverState = new Phaser.State();
 
-        GameOverState.preload = function() {
-            // loadAssets();
-        };
-
         GameOverState.create = function() {
             isGameOver = true;
-
-            // createBackground();
-            // createRain();
-            // createClouds();
-            // createFence();
-            // createBird();
-            // createTexts();
-
-            Game.input.onDown.add(function() {
-                Game.state.start('MainMenu', true, false);
-            });
 
             Towers.forEachAlive(function(tower) {
                 tower.body.velocity.x = 0;
@@ -229,6 +202,10 @@
 
             FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
                 spaceInTower.body.velocity.x = 0;
+            });
+
+            Game.input.onDown.addOnce(function() {
+                Game.state.start('MainMenu', true, false);
             });
 
             TowersTimer.stop();
@@ -362,7 +339,7 @@
         //////////////////
         //Create towers //
         //////////////////
-        var createTowers = function createTowers() {
+        var createTowers = function createTowers(timer) {
             function calcDifficult() {
                 return AVAILABLE_SPACE_BETWEEN_TOWERS + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
             }
@@ -391,11 +368,14 @@
                 TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
             }
 
-            Towers = Game.add.group();
-            FreeSpacesInTowers = Game.add.group();
-            TowersTimer = Game.time.create(false);
-            TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
-            TowersTimer.start();
+            if (timer) {
+                TowersTimer = Game.time.create(false);
+                TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
+                TowersTimer.start();
+            } else {
+                Towers = Game.add.group();
+                FreeSpacesInTowers = Game.add.group();
+            }
         };
 
         /////////////////
