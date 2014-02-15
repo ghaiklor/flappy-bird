@@ -2,11 +2,12 @@
     //GAME CONSTANTS
     var DEBUG_MODE = true,
         SPEED = 180,
-        GRAVITY = 18,
-        BIRD_FLAP = 420,
+        GRAVITY = 420,
+        BIRD_FLAP = 240,
+        BIRD_MASS = 40000,
         HEALTH_COUNT_ON_START = 5,
         TOWER_SPAWN_INTERVAL = 2000,
-        AVAILABLE_SPACE_BETWEEN_TOWERS = 200,
+        AVAILABLE_SPACE_BETWEEN_TOWERS = 150,
         CLOUDS_SHOW_MIN_TIME = 5000,
         CLOUDS_SHOW_MAX_TIME = 10000,
         MAX_DIFFICULT = 50,
@@ -69,44 +70,54 @@
 
     //Lifecycle of game
     function onUpdateGame() {
-        //TODO: Make Bird.damage()
+        //If game is started
         if (isGameStarted) {
-            //If game is started
-            // console.log(Bird.body.velocity.y);
+            //Get current bird's velocity plus our BIRD_FLAP velocity
+            //I need this for calculate bird's angle
             var divingInAir = BIRD_FLAP + Bird.body.velocity.y;
+            //Calculate Bird's angle
             Bird.angle = (90 * divingInAir / BIRD_FLAP) - 180;
+            //If this angle < -30 then
+            //set -30
+            //it's our minimum value
             if (Bird.angle < -30) {
                 Bird.angle = -30;
+            } else if (Bird.angle > 30) {
+                //And our maximum value
+                Bird.angle = 30;
             }
 
-            if (isGameOver || Bird.angle > 90 || Bird.angle < -90) {
-                Bird.angle = 90;
+            //If game over 
+            if (isGameOver) {
+                //Set bird's angle to 90
+                Bird.angle = 180;
+                //Stop all animations
                 Bird.animations.stop();
+                //And set animation's frame to 3
                 Bird.frame = 3;
             } else {
-                Bird.animations.play('flying');
-            }
-
-            if (isGameOver) {
-                if (Bird.scale.x < 4) {
-                    Bird.scale.setTo(Bird.scale.x * 1.2, Bird.scale.y * 1.2);
-                }
-            } else {
-                Game.physics.overlap(Bird, Towers, gameOver);
-                if (!isGameOver && Bird.body.bottom >= Game.world.bounds.bottom) {
+                //If GameOver or Bird collide with top or bottom world then call gameOver()
+                if (!isGameOver && (Bird.body.bottom >= Game.world.bounds.bottom - 32 || Bird.body.top <= Game.world.bounds.top)) {
                     gameOver();
                 }
 
+                //Check collision our Bird with Towers group
+                //If collision then call gameOver function
+                Game.physics.overlap(Bird, Towers, gameOver);
+
+                //Check collision our Bird with our "triggers"
+                //And if collide then add score
                 Game.physics.overlap(Bird, FreeSpacesInTowers, addScore);
             }
 
-            ScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+            //For each tower
+            //Check if it visible
+            //If not then kill it
             Towers.forEachAlive(function(tower) {
                 if (tower.x + tower.width < Game.world.bounds.left) {
                     tower.kill();
                 }
             });
-            TowersTimer.update();
         } else {
             //If game not started
             //Then make some animation for bird
@@ -325,6 +336,8 @@
         Bird.body.collideWorldBounds = true;
         //Set gravity for bird
         Bird.body.gravity.y = GRAVITY;
+        //Set mass for bird
+        Bird.body.mass = BIRD_MASS;
     }
 
     /**
@@ -451,7 +464,9 @@
     //Count player's score
     //spaceInTower param need for removing it from group
     //when bird fly over it
-    function addScore(spaceInTower) {
+    //First argument not needed
+    //SAT.Response send "trigger" in second argument
+    function addScore(_, spaceInTower) {
         //Remove space from group
         FreeSpacesInTowers.remove(spaceInTower);
         //Increase game's score by one
