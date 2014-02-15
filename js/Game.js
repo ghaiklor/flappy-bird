@@ -1,11 +1,10 @@
 (function() {
     //GAME CONSTANTS
-    var DEBUG = true,
+    var DEBUG_MODE = true,
         SPEED = 180,
         GRAVITY = 18,
-        FLAP = 420,
+        BIRD_FLAP = 420,
         TOWER_SPAWN_INTERVAL = 2000,
-        OPENING = 144,
         CLOUDS_SHOW_MIN_TIME = 5000,
         CLOUDS_SHOW_MAX_TIME = 10000,
         SCENE = '',
@@ -22,29 +21,37 @@
         //HELPER VARIABLES FOR SAVING GAME-OBJECTS
         Background,
         Clouds, CloudsTimer,
-        FreeSpaceInTower, Towers, TowersTimer,
+        FreeSpacesInTowers, Towers, TowersTimer,
         Bird,
         Fence,
         FlapSound, ScoreSound, HurtSound,
-        AboutText, ScoreText,
+        AboutText, ScoreText, InstructionsText, HighScoreText,
 
         //VARIABLES FOR GAME-MANAGEMENT
         isGameStarted = false,
         isGameOver = false,
         gameScore = 0;
 
+    //on Preload I load assets
     function onPreloadGame() {
+        //Loading spritesheets and set sizes of one frame
+        //Phaser automatically create and crop spritesheet to animated
         Game.load.spritesheet('bird', 'img/bird.png', 24, 24);
         Game.load.spritesheet('clouds', 'img/clouds.png', 128, 64);
 
+        //Just loads image of fence and tower
         Game.load.image('fence', 'img/fence.png');
         Game.load.image('tower', 'img/tower.png');
 
+        //Loading audio
         Game.load.audio('flap', 'wav/flap.wav');
         Game.load.audio('hurt', 'wav/hurt.wav');
         Game.load.audio('score', 'wav/score.wav');
     }
 
+    //Initialize game
+    //Creating all game objects and resetGame
+    //For start point
     function onCreateGame() {
         createBackground();
         createClouds();
@@ -57,11 +64,12 @@
         resetGame();
     }
 
+    //Lifecycle of game
     function onUpdateGame() {
         //Make Bird.damage()
         if (isGameStarted) {
-            var divingInAir = FLAP + Bird.body.velocity.y;
-            Bird.angle = (90 * divingInAir / FLAP) - 180;
+            var divingInAir = BIRD_FLAP + Bird.body.velocity.y;
+            Bird.angle = (90 * divingInAir / BIRD_FLAP) - 180;
             if (Bird.angle < -30) {
                 Bird.angle = -30;
             }
@@ -84,7 +92,7 @@
                     gameOver();
                 }
 
-                Game.physics.overlap(Bird, FreeSpaceInTower, addScore);
+                Game.physics.overlap(Bird, FreeSpacesInTowers, addScore);
             }
 
             Towers.forEachAlive(function(tower) {
@@ -110,25 +118,35 @@
         }
     }
 
+    //It's helper for me
+    //Here I draw sprite bodies
+    //For checks collision visually
     function onRenderGame() {
-        if (DEBUG) {
+        //And draw it only in Debug mode
+        if (DEBUG_MODE) {
             Game.debug.renderSpriteBody(Bird);
+
             Towers.forEachAlive(function(tower) {
                 Game.debug.renderSpriteBody(tower);
             });
-            FreeSpaceInTower.forEachAlive(function(spaceInTower) {
+
+            FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
                 Game.debug.renderSpriteBody(spaceInTower);
             });
         }
     }
 
     /**
-     * Fills background
+     * Make background
      */
     function createBackground() {
+        //Create new graphics
         Background = Game.add.graphics(0, 0);
+        //Init filling color
         Background.beginFill(0xCCEEFF, 1);
+        //And draw fullyscreen rectangle
         Background.drawRect(0, 0, Game.world.width, Game.world.height);
+        //Close filling
         Background.endFill();
     }
 
@@ -140,27 +158,49 @@
          * Make new cloud every tick in timer
          */
         function makeNewCloud() {
+            //Random Y for new cloud
             var cloudY = Math.random() * Game.world.height / 2,
+                //Create child of Clouds group and set
+                //x - from right side
+                //y - random Y
+                //assetName - clouds which loaded in onPreloadGame
+                //frame - random value from 1 to 4 (4 frames in clouds spritesheet)
                 cloud = Clouds.create(Game.world.width, cloudY, 'clouds', Math.floor(4 * Math.random())),
-                cloudScale = 2 + 2 * Math.random();
+                //Random scaling of cloud and need plus static value
+                //From prevent scaleTo(0, 0);
+                cloudScale = 1 + Math.floor((3 * Math.random()));
 
+            //Set alpha for cloud
+            //For bigger clouds more alpha
+            //Min value of cloudSace 2 and max value 4
             cloud.alpha = 2 / cloudScale;
+            //Sets scale to cloud
             cloud.scale.setTo(cloudScale, cloudScale);
+            //Disable gravity for this sprite
             cloud.body.allowGravity = false;
+            //Set velocity to the left with currect game's speed
+            //For bigger clouds velocity lower
             cloud.body.velocity.x = -SPEED / cloudScale;
-            cloud.anchor.y = 0;
+            //Set anchor point to (0, 0.5);
+            cloud.anchor.setTo(0, 0.5);
 
+            //Add new TimerEvent in RandomRange
+            //For call again this function
             CloudsTimer.add(Game.rnd.integerInRange(CLOUDS_SHOW_MIN_TIME, CLOUDS_SHOW_MAX_TIME), makeNewCloud, this);
         }
 
+        //Create new GameGroup
         Clouds = Game.add.group();
+        //Create new PhaserTimer with autodestroy false - it's important
         CloudsTimer = Game.time.create(false);
+        //Call immediatly makeNewCloud function
         CloudsTimer.add(0, makeNewCloud, this);
+        //And start timer
         CloudsTimer.start();
     }
 
     /**
-     * Create towers (our colliders)
+     * Create towers
      */
     function createTowers() {
         function o() {
@@ -182,7 +222,7 @@
                 bottomTower = makeNewTower(towerY),
                 topTower = makeNewTower(towerY, true);
 
-            var spaceInTower = FreeSpaceInTower.create(topTower.x + topTower.width, 0);
+            var spaceInTower = FreeSpacesInTowers.create(topTower.x + topTower.width, 0);
             spaceInTower.width = 2;
             spaceInTower.height = Game.world.height;
             spaceInTower.body.allowGravity = false;
@@ -191,31 +231,27 @@
             TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
         }
 
-        FreeSpaceInTower = Game.add.group();
         Towers = Game.add.group();
         TowersTimer = Game.time.create(false);
         TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
         TowersTimer.start();
+
+        FreeSpacesInTowers = Game.add.group();
     }
 
     /**
      * Create main actor of our game - A FUCKING BIRD, MUHAHAHA
      */
     function createBird() {
-        Bird = Game.add.sprite(20, 20, 'bird');
+        Bird = Game.add.sprite(0, 0, 'bird');
         Bird.alive = true;
         Bird.health = 5;
         Bird.anchor.setTo(0.5, 0.5);
         Bird.scale.setTo(2, 2);
         Bird.animations.add('flying', [0, 1, 2, 3], 10, true);
         Bird.inputEnabled = true;
-        Bird.body.bounce.setTo(0.5, 0.6);
-        Bird.body.collideCallback = function() {
-            console.log('test');
-        };
         Bird.body.collideWorldBounds = true;
         Bird.body.gravity.y = GRAVITY;
-        // Bird.body.linearDamping = 1.5;
         Bird.body.mass = 2;
         Bird.body.speed = 10;
     }
@@ -242,20 +278,38 @@
      */
     function createTexts() {
         AboutText = Game.add.text(Game.world.width / 20, 10, 'Eugene Obrezkov\nghaiklor@gmail.com', {
-            font: 'Arial',
+            font: '15px "Press Start 2P"',
             fill: '#000000',
             align: 'center'
         });
         AboutText.anchor.x = 0.5;
 
         ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 5, "", {
-            font: '32px Arial',
+            font: '32px "Press Start 2P"',
             fill: '#FFFFFF',
             stroke: '#443300',
             strokeThickness: 8,
             align: 'center'
         });
         ScoreText.anchor.setTo(0.5, 0.5);
+
+        InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 4, "", {
+            font: '16px "Press Start 2P"',
+            fill: '#fff',
+            stroke: '#430',
+            strokeThickness: 8,
+            align: 'center'
+        });
+        InstructionsText.anchor.setTo(0.5, 0.5);
+
+        HighScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "", {
+            font: '24px "Press Start 2P"',
+            fill: '#fff',
+            stroke: '#430',
+            strokeThickness: 8,
+            align: 'center'
+        });
+        HighScoreText.anchor.setTo(0.5, 0.5);
     }
 
     /**
@@ -274,11 +328,15 @@
         isGameStarted = false;
         isGameOver = false;
         gameScore = 0;
-        Bird.reset(Game.world.width / 4, Game.world.height / 2);
-        Bird.angle = 0;
+        ScoreText.setText('FLAPPY BIRD');
+        InstructionsText.setText("TOUCH TO\nFLY");
+        HighScoreText.renderable = false;
         Bird.body.allowGravity = false;
+        Bird.angle = 0;
+        Bird.reset(Game.world.width / 4, Game.world.height / 2);
+        Bird.scale.setTo(2, 2);
         Bird.animations.play('flying');
-        FreeSpaceInTower.removeAll();
+        FreeSpacesInTowers.removeAll();
         Towers.removeAll();
         TowersTimer.stop();
     }
@@ -291,6 +349,7 @@
         TowersTimer.start();
         isGameStarted = true;
         ScoreText.setText(gameScore);
+        InstructionsText.renderable = false;
     }
 
     function gameOver() {
@@ -298,7 +357,7 @@
         Towers.forEachAlive(function(tower) {
             tower.body.velocity.x = 0;
         });
-        FreeSpaceInTower.forEachAlive(function(spaceInTower) {
+        FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
             spaceInTower.body.velocity.x = 0;
         });
         TowersTimer.stop();
@@ -314,15 +373,13 @@
         if (!isGameStarted) {
             startGame();
         } else if (!isGameOver) {
-            Bird.body.velocity.y = -FLAP;
+            Bird.body.velocity.y = -BIRD_FLAP;
             FlapSound.play();
-        } else {
-
         }
     }
 
     function addScore(spaceInTower) {
-        FreeSpaceInTower.remove(spaceInTower);
+        FreeSpacesInTowers.remove(spaceInTower);
         ++gameScore;
         ScoreText.setText(gameScore);
         ScoreSound.play();
