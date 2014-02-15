@@ -633,8 +633,13 @@
         }
     };
 
-    window.onload = function() {
-        initializeGame();
-        // window.addEventListener('load', initializeGame, false);
-    };
+
+    WebFont.load({
+        google: {
+            families: ['Press+Start+2P']
+        },
+        active: function() {
+            initializeGame();
+        }
+    });
 })();
