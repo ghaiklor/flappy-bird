@@ -6,6 +6,7 @@
         BIRD_FLAP = 420,
         HEALTH_COUNT_ON_START = 5,
         TOWER_SPAWN_INTERVAL = 2000,
+        AVAILABLE_SPACE_BETWEEN_TOWERS = 200,
         CLOUDS_SHOW_MIN_TIME = 5000,
         CLOUDS_SHOW_MAX_TIME = 10000,
         MAX_DIFFICULT = 50,
@@ -68,8 +69,10 @@
 
     //Lifecycle of game
     function onUpdateGame() {
-        //Make Bird.damage()
+        //TODO: Make Bird.damage()
         if (isGameStarted) {
+            //If game is started
+            // console.log(Bird.body.velocity.y);
             var divingInAir = BIRD_FLAP + Bird.body.velocity.y;
             Bird.angle = (90 * divingInAir / BIRD_FLAP) - 180;
             if (Bird.angle < -30) {
@@ -97,6 +100,7 @@
                 Game.physics.overlap(Bird, FreeSpacesInTowers, addScore);
             }
 
+            ScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
             Towers.forEachAlive(function(tower) {
                 if (tower.x + tower.width < Game.world.bounds.left) {
                     tower.kill();
@@ -104,18 +108,28 @@
             });
             TowersTimer.update();
         } else {
-            Bird.y = (Game.world.height / 2) + 8 * Math.cos(Game.time.now / 200);
+            //If game not started
+            //Then make some animation for bird
+            //Game.time.now == 0 in start
+            //0 / 400 == 0
+            //Cos(0) == 1
+            //Cos(1) == 0
+            //In result soft amplitude for Bird.y and Bird.x
+            Bird.y = (Game.world.height / 2) + Game.world.height / 4 * Math.cos(Game.time.now / 1000);
+            Bird.x = (Game.world.width / 10) + 32 * Math.sin(Game.time.now / 5000);
         }
 
-        ScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
-        CloudsTimer.update();
+        //Every update tick need check if clouds go from camera
+        //And remove it
         Clouds.forEachAlive(function(cloud) {
             if (cloud.x + cloud.width < Game.world.bounds.left) {
                 cloud.kill();
             }
         });
 
+        //If game not over
         if (!isGameOver) {
+            //Animate our Fence tilePosition
             Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
         }
     }
@@ -208,7 +222,7 @@
         //Calculate difficult coefficient
         //More play - more difficult
         function calcDifficult() {
-            return 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
+            return AVAILABLE_SPACE_BETWEEN_TOWERS + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
         }
 
         //Make tower based on towerY
