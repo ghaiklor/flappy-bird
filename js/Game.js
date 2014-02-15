@@ -3,18 +3,18 @@
         //GAME CONSTANTS
         var DEBUG_MODE = false,
             SPEED = 180,
-            GRAVITY = 640,
-            BIRD_FLAP = 240,
+            GRAVITY = 1800,
+            BIRD_FLAP = 550,
             TOWER_SPAWN_INTERVAL = 2000,
-            AVAILABLE_SPACE_BETWEEN_TOWERS = 100,
+            AVAILABLE_SPACE_BETWEEN_TOWERS = 130,
             CLOUDS_SHOW_MIN_TIME = 5000,
             CLOUDS_SHOW_MAX_TIME = 10000,
             MAX_DIFFICULT = 50,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
             INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
-            INSTRUCTIONS_TEXT_GAME_OVER = "TOUCH\nTO GO\nBACK",
-            AUTHOR_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com\n\nGraphic\nDima Lezhenko",
+            INSTRUCTIONS_TEXT_GAME_OVER = "TOUCH\nFOR GO\nBACK",
+            ABOUT_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com\n\n\nGraphic\nDima Lezhenko",
             WINDOW_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
             WINDOW_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
 
@@ -32,7 +32,7 @@
             Bird,
             Fence,
             FlapSound, ScoreSound, HurtSound,
-            TitleText, AboutText, ScoreText, InstructionsText, HighScoreText,
+            TitleText, InstructionsText, AboutText, ScoreText, HighScoreText,
 
             //VARIABLES FOR GAME-MANAGEMENT
             isGameStarted = false,
@@ -93,9 +93,10 @@
                     Bird.angle = 30;
                 }
 
-                //If game over 
+                //If game over in started game
                 if (isGameOver) {
-                    //Set bird's angle to 90
+                    //Then set bird's angle to 180
+                    //Towards up
                     Bird.angle = 180;
                     //Stop all animations
                     Bird.animations.stop();
@@ -124,6 +125,7 @@
                         tower.kill();
                     }
                 });
+
             } else {
                 //If game not started
                 //Then make some animation for bird
@@ -133,7 +135,7 @@
                 //Cos(1) == 0
                 //In result soft amplitude for Bird.y and Bird.x
                 Bird.y = (Game.world.height / 2) + Game.world.height / 4 * Math.cos(Game.time.now / 1000);
-                Bird.x = (Game.world.width / 10) + 32 * Math.sin(Game.time.now / 5000);
+                Bird.x = (Game.world.width / 10) + 32 * Math.sin(Game.time.now / 2000);
             }
 
             //Every update tick need check if clouds go from camera
@@ -152,8 +154,9 @@
 
             if (!isGameStarted || isGameOver) {
                 //Give effect for texts
-                TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
-                InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+                // TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+                TitleText.angle = 10 * Math.cos(Game.time.now / 300);
+                InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 1000), 1 + 0.1 * Math.sin(Game.time.now / 100));
             }
         }
 
@@ -188,8 +191,9 @@
             //Create new graphics
             Background = Game.add.graphics(0, 0);
             //Init filling color
+            //TODO: make normal background
             Background.beginFill(0x4E5B61, 1);
-            //And draw fullyscreen rectangle
+            // And draw fullyscreen rectangle
             Background.drawRect(0, 0, Game.world.width, Game.world.height);
             //Close filling
             Background.endFill();
@@ -253,7 +257,7 @@
             //And make particles from rain spritesheer
             emitter.makeParticles('rain');
             //Set scaling
-            emitter.maxParticleScale = 0.5;
+            emitter.maxParticleScale = 0.7;
             emitter.minParticleScale = 0.1;
             //And speed
             emitter.setYSpeed(300, 500);
@@ -270,7 +274,7 @@
         function createTowers(firstRun) {
             //Calculate difficult coefficient
             //More play - more difficult
-            function calcDifficult() {
+            function getFreeSpaceInTower() {
                 return AVAILABLE_SPACE_BETWEEN_TOWERS + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
             }
 
@@ -281,7 +285,7 @@
                 //x - appears from right
                 //y - if need flipped then substract from difficult. In other case plus
                 //sprite - and just load asset with tower png
-                var tower = Towers.create(Game.world.width, towerY + (isFlipped ? -calcDifficult() : calcDifficult()) / 2, 'tower');
+                var tower = Towers.create(Game.world.width, towerY + (isFlipped ? -getFreeSpaceInTower() : getFreeSpaceInTower()) / 2, 'tower');
 
                 //Disable gravity for it
                 tower.body.allowGravity = false;
@@ -310,7 +314,7 @@
                 //277 + 25.6 - first possible variant of towerY
                 //600 - 16 + 100 - second possible variant of towerY
                 //and go on...
-                var towerY = ((Game.world.height - 16 - calcDifficult() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
+                var towerY = ((Game.world.height - 16 - getFreeSpaceInTower() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
                     //Create bottom tower from towerY
                     bottomTower = makeNewTower(towerY),
                     //Create flipped tower for towerY
@@ -415,19 +419,18 @@
                 font: '32px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
-                strokeThickness: 3,
+                strokeThickness: 2,
                 align: 'center'
             });
             //Set anchor to text's center
             TitleText.anchor.setTo(0.5, 0.5);
-            TitleText.angle = 5;
 
             //Create text with author
-            AboutText = Game.add.text(Game.world.width - 10, 10, AUTHOR_TEXT, {
-                font: '14px "Press Start 2P"',
+            AboutText = Game.add.text(Game.world.width - 10, 10, ABOUT_TEXT, {
+                font: '12px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
-                strokeThickness: 3,
+                strokeThickness: 1,
                 align: 'center'
             });
             //Set anchor to right for set text in right corner
@@ -451,7 +454,7 @@
                 font: '16px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
-                strokeThickness: 2,
+                strokeThickness: 1,
                 align: 'center'
             });
             //Set anchor to center of text
@@ -460,9 +463,9 @@
             //Create text object for showing highscore and your score
             HighScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "", {
                 font: '24px "Press Start 2P"',
-                fill: '#fff',
-                stroke: '#430',
-                strokeThickness: 8,
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 1,
                 align: 'center'
             });
             //Set anchor to text's center again and again and again...
@@ -535,7 +538,7 @@
             ScoreText.renderable = false;
             HighScoreText.renderable = false;
 
-            AboutText.setText(AUTHOR_TEXT);
+            AboutText.setText(ABOUT_TEXT);
             TitleText.setText(TITLE_TEXT);
             InstructionsText.setText(INSTRUCTIONS_TEXT);
             AboutText.renderable = true;
@@ -611,11 +614,13 @@
             //Play Hurt sound (Game is over)
             HurtSound.play();
 
+            AboutText.renderable = false;
+            TitleText.renderable = false;
+            InstructionsText.renderable = true;
             ScoreText.renderable = false;
             HighScoreText.renderable = true;
-            InstructionsText.renderable = true;
             InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
-            HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\nYOUR SCORE: " + gameScore);
+            HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\n\nYOUR SCORE: " + gameScore);
         }
 
         /**
@@ -628,13 +633,17 @@
                 highscore = score;
                 window.localStorage.setItem('highscore', highscore);
             }
-
             return highscore;
         }
     };
 
-    window.onload = function() {
-        initializeGame();
-        // window.addEventListener('load', initializeGame, false);
-    };
+
+    WebFont.load({
+        google: {
+            families: ['Press+Start+2P']
+        },
+        active: function() {
+            initializeGame();
+        }
+    });
 })();
