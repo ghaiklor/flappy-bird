@@ -237,6 +237,7 @@
 
         //This function create towers for top and bottom
         function makeTowers() {
+            console.log('makeTowers');
             //Generate random Y for tower
             //Get world's height and substract it from difficult divided by 2
             //And plus it to random height / 6
@@ -279,6 +280,8 @@
         TowersTimer = Game.time.create(false);
         //Add TimerEvent for makeTowers method
         TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
+        TowersTimer.start();
+        console.log('createTowers');
     }
 
     /**
@@ -455,11 +458,11 @@
         isGameOver = false;
         gameScore = 0;
 
-        //Disable rendering of unused text
+        //Configure text objects
+        TitleText.renderable = true;
         ScoreText.renderable = false;
+        InstructionsText.renderable = true;
         HighScoreText.renderable = false;
-
-        //Set text for instruction
         InstructionsText.setText("TOUCH TO FLY");
 
         //Disable gravity for bird
@@ -480,7 +483,7 @@
         Towers.removeAll();
 
         //Stops TowersTimer from spawning new towers in main menu
-        TowersTimer.stop();
+        TowersTimer.pause();
     }
 
     /**
@@ -491,7 +494,7 @@
         Bird.body.allowGravity = true;
 
         //Enable timer for towers
-        TowersTimer.start();
+        TowersTimer.resume();
 
         //Set that game is started
         isGameStarted = true;
@@ -521,7 +524,7 @@
         });
 
         //Stops TowersTimer
-        TowersTimer.stop();
+        TowersTimer.pause();
 
         //Add once event to click on Bird
         //And show MainMenu
