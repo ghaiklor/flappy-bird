@@ -2,12 +2,11 @@
     //GAME CONSTANTS
     var DEBUG_MODE = true,
         SPEED = 180,
-        GRAVITY = 420,
+        GRAVITY = 640,
         BIRD_FLAP = 240,
         BIRD_MASS = 40000,
-        HEALTH_COUNT_ON_START = 5,
         TOWER_SPAWN_INTERVAL = 2000,
-        AVAILABLE_SPACE_BETWEEN_TOWERS = 150,
+        AVAILABLE_SPACE_BETWEEN_TOWERS = 100,
         CLOUDS_SHOW_MIN_TIME = 5000,
         CLOUDS_SHOW_MAX_TIME = 10000,
         MAX_DIFFICULT = 50,
@@ -61,6 +60,7 @@
         createClouds();
         createTowers();
         createBird();
+        createCamera();
         createFence();
         createSounds();
         createTexts();
@@ -151,10 +151,14 @@
     function onRenderGame() {
         //And draw it only in Debug mode
         if (DEBUG_MODE) {
+            Game.debug.renderCameraInfo(Game.camera, 32, 32);
             Game.debug.renderSpriteBody(Bird);
+            Game.debug.renderSpriteBounds(Bird);
+            Game.debug.renderSpriteCorners(Bird, true, true);
 
             Towers.forEachAlive(function(tower) {
                 Game.debug.renderSpriteBody(tower);
+                Game.debug.renderSpriteCorners(tower, true, true);
             });
 
             FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
@@ -316,10 +320,6 @@
     function createBird() {
         //Add Bird's sprite to scene
         Bird = Game.add.sprite(0, 0, 'bird');
-        //Set that bird alive
-        Bird.alive = true;
-        //And have 5 lifes
-        Bird.health = HEALTH_COUNT_ON_START;
         //Set anchor point to center of sprite
         Bird.anchor.setTo(0.5, 0.5);
         //Scale it in twice
@@ -338,6 +338,13 @@
         Bird.body.gravity.y = GRAVITY;
         //Set mass for bird
         Bird.body.mass = BIRD_MASS;
+    }
+
+    /**
+     * Create camera
+     */
+    function createCamera() {
+        Game.camera.follow(Bird);
     }
 
     /**
