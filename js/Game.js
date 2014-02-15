@@ -4,9 +4,11 @@
         SPEED = 180,
         GRAVITY = 18,
         BIRD_FLAP = 420,
+        HEALTH_COUNT_ON_START = 5,
         TOWER_SPAWN_INTERVAL = 2000,
         CLOUDS_SHOW_MIN_TIME = 5000,
         CLOUDS_SHOW_MAX_TIME = 10000,
+        MAX_DIFFICULT = 50,
         SCENE = '',
         WINDOW_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
         WINDOW_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
@@ -25,7 +27,7 @@
         Bird,
         Fence,
         FlapSound, ScoreSound, HurtSound,
-        AboutText, ScoreText, InstructionsText, HighScoreText,
+        TitleText, AboutText, ScoreText, InstructionsText, HighScoreText,
 
         //VARIABLES FOR GAME-MANAGEMENT
         isGameStarted = false,
@@ -50,7 +52,7 @@
     }
 
     //Initialize game
-    //Creating all game objects and resetGame
+    //Creating all game objects and mainMenu
     //For start point
     function onCreateGame() {
         createBackground();
@@ -61,7 +63,7 @@
         createSounds();
         createTexts();
         createControls();
-        resetGame();
+        mainMenu();
     }
 
     //Lifecycle of game
@@ -203,64 +205,124 @@
      * Create towers
      */
     function createTowers() {
-        function o() {
-            return OPENING + 60 * ((gameScore > 50 ? 50 : 50 - gameScore) / 50);
+        //Calculate difficult coefficient
+        //More play - more difficult
+        function calcDifficult() {
+            return 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
         }
 
+        //Make tower based on towerY
+        //If isFlipped then create flipped tower for top
         function makeNewTower(towerY, isFlipped) {
-            var tower = Towers.create(Game.world.width, towerY + (isFlipped ? -o() : o()) / 2, 'tower');
+            //Create new element in Towers Groups
+            //x - appears from right
+            //y - if need flipped then substract from difficult. In other case plus
+            //sprite - and just load asset with tower png
+            var tower = Towers.create(Game.world.width, towerY + (isFlipped ? -calcDifficult() : calcDifficult()) / 2, 'tower');
 
+            //Disable gravity for it
             tower.body.allowGravity = false;
+            //Scale tower twice
+            //x - 2
+            //y - if need flipped then can use negative value and Phaser rotate it
             tower.scale.setTo(2, isFlipped ? -2 : 2);
+            //Set top offset for hiding other part of asset for flipped tower
+            //As our asset 512px in height then we need move up our rotated tower
             tower.body.offset.y = isFlipped ? -tower.body.height * 2 : 0;
+            //Set tower negative speed
             tower.body.velocity.x = -SPEED;
+            //And return tower object for using in makeTowers()
             return tower;
         }
 
+        //This function create towers for top and bottom
         function makeTowers() {
-            var towerY = ((Game.world.height - 16 - o() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
+            //Generate random Y for tower
+            //Get world's height and substract it from difficult divided by 2
+            //And plus it to random height / 6
+            //First part get towerY on difficult
+            //Second part change towerY higher of lower
+            //For example
+            //(600 (world's height) - 16 (sprite's size / 2) - 60 (gameScore == 0) / 2) / 2) + (-1 || 1) * (0...1) * 600 / 6
+            //277 + 25.6 - first possible variant of towerY
+            //600 - 16 + 100 - second possible variant of towerY
+            //and go on...
+            var towerY = ((Game.world.height - 16 - calcDifficult() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
+                //Create bottom tower from towerY
                 bottomTower = makeNewTower(towerY),
+                //Create flipped tower for towerY
                 topTower = makeNewTower(towerY, true);
 
+            //Create our "trigger", area between towers
+            //And place it at end of tower
             var spaceInTower = FreeSpacesInTowers.create(topTower.x + topTower.width, 0);
+            //Set width to it 2 - this enough
             spaceInTower.width = 2;
+            //Set full-height for can be triggered for sure
             spaceInTower.height = Game.world.height;
+            //Disable gravity
             spaceInTower.body.allowGravity = false;
+            //And set velocity to negative game's speed
             spaceInTower.body.velocity.x = -SPEED;
 
+            //Spawn towers every interval
             TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
         }
 
+        //Create new Towers Group
         Towers = Game.add.group();
-        TowersTimer = Game.time.create(false);
-        TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
-        TowersTimer.start();
-
+        //Create group for elements
+        //which will inserted in area between towers
+        //This elements will be our triggers for score game
         FreeSpacesInTowers = Game.add.group();
+        //Create new TowerTimer with autodestroy set to false again
+        TowersTimer = Game.time.create(false);
+        //Add TimerEvent for makeTowers method
+        TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
     }
 
     /**
-     * Create main actor of our game - A FUCKING BIRD, MUHAHAHA
+     * Create main actor of our game - A FUCKING BIRD
+     * I have a lot problems with bird's physics
      */
     function createBird() {
+        //Add Bird's sprite to scene
         Bird = Game.add.sprite(0, 0, 'bird');
+        //Set that bird alive
         Bird.alive = true;
-        Bird.health = 5;
+        //And have 5 lifes
+        Bird.health = HEALTH_COUNT_ON_START;
+        //Set anchor point to center of sprite
         Bird.anchor.setTo(0.5, 0.5);
+        //Scale it in twice
         Bird.scale.setTo(2, 2);
+        //Add animation from our spritesheet
+        //Give it name 'flying' and set 4 frames
+        //Framerate will be 10
+        //and animation will be looped
         Bird.animations.add('flying', [0, 1, 2, 3], 10, true);
+        //Allow events for bird
         Bird.inputEnabled = true;
+        //Set bird's body collide with world's bounds
+        //In our case it top left, top right, etc... corners of browser
         Bird.body.collideWorldBounds = true;
+        //Set gravity for bird
         Bird.body.gravity.y = GRAVITY;
-        Bird.body.mass = 2;
-        Bird.body.speed = 10;
     }
 
     /**
      * Create Fence in game, just for fun and beauty
      */
     function createFence() {
+        //Create tiled sprite
+        //x1 - from left
+        //y1 - world's height - sprite's height * 2
+        //x2 - to right
+        //y2 - and sprite's height * 2
+        //asset - what load to this tile
+        //We drawing a rectangle with this sprite
         Fence = Game.add.tileSprite(0, Game.world.height - 32, Game.world.width, 32, 'fence');
+        //Scale fence twice
         Fence.tileScale.setTo(2, 2);
     }
 
@@ -268,6 +330,8 @@
      * Our GODNESS sounds in wav-format just need add to game as GOD say
      */
     function createSounds() {
+        //Just loading and assigning it to variables
+        //Not interesting
         FlapSound = Game.add.audio('flap');
         ScoreSound = Game.add.audio('score');
         HurtSound = Game.add.audio('hurt');
@@ -277,31 +341,51 @@
      * Create Text objects for GUI
      */
     function createTexts() {
-        AboutText = Game.add.text(Game.world.width / 20, 10, 'Eugene Obrezkov\nghaiklor@gmail.com', {
-            font: '15px "Press Start 2P"',
+        //Create text object for showing title of game
+        TitleText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "FLAPPY BIRD", {
+            font: '32px "Press Start 2P"',
+            fill: '#FFFFFF',
+            stroke: '#000000',
+            strokeThickness: 3,
+            align: 'center'
+        });
+        //Set anchor to text's center
+        TitleText.anchor.setTo(0.5, 0.5);
+
+        //Create text with author
+        AboutText = Game.add.text(Game.world.width - 10, 10, 'Eugene Obrezkov\nghaiklor@gmail.com', {
+            font: '10px "Press Start 2P"',
             fill: '#000000',
             align: 'center'
         });
-        AboutText.anchor.x = 0.5;
+        //Set anchor to right for set text in right corner
+        AboutText.anchor.x = 1;
 
-        ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 5, "", {
+        //Create text object with our future score showing
+        //And I place it in centerH and higherV
+        ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "0", {
             font: '32px "Press Start 2P"',
             fill: '#FFFFFF',
-            stroke: '#443300',
-            strokeThickness: 8,
+            stroke: '#000000',
+            strokeThickness: 3,
             align: 'center'
         });
+        //Set anchor to center of text
         ScoreText.anchor.setTo(0.5, 0.5);
 
-        InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 4, "", {
+        //Create text object with instruction what to do
+        //i.e. Touch Bird to start game
+        InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 3, "TOUCH TO FLY", {
             font: '16px "Press Start 2P"',
-            fill: '#fff',
-            stroke: '#430',
-            strokeThickness: 8,
+            fill: '#FFFFFF',
+            stroke: '#000000',
+            strokeThickness: 2,
             align: 'center'
         });
+        //Set anchor to center of text
         InstructionsText.anchor.setTo(0.5, 0.5);
 
+        //Create text object for showing highscore and your score
         HighScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "", {
             font: '24px "Press Start 2P"',
             fill: '#fff',
@@ -309,6 +393,8 @@
             strokeThickness: 8,
             align: 'center'
         });
+        //Set anchor to text's center again and again and again...
+        //Fucking anchor, I hate you
         HighScoreText.anchor.setTo(0.5, 0.5);
     }
 
@@ -317,52 +403,8 @@
      * And create all needed controls
      */
     function createControls() {
+        //Here I just assign method to execute when user press mousedown or touch screen
         Game.input.onDown.add(flyBirdFuckWhyAreYouNotFlyingBitch);
-    }
-
-    /**
-     * This function need to set up default values for game-variables
-     * Start new game in other words
-     */
-    function resetGame() {
-        isGameStarted = false;
-        isGameOver = false;
-        gameScore = 0;
-        ScoreText.setText('FLAPPY BIRD');
-        InstructionsText.setText("TOUCH TO\nFLY");
-        HighScoreText.renderable = false;
-        Bird.body.allowGravity = false;
-        Bird.angle = 0;
-        Bird.reset(Game.world.width / 4, Game.world.height / 2);
-        Bird.scale.setTo(2, 2);
-        Bird.animations.play('flying');
-        FreeSpacesInTowers.removeAll();
-        Towers.removeAll();
-        TowersTimer.stop();
-    }
-
-    /**
-     * Initialize new Game
-     */
-    function startGame() {
-        Bird.body.allowGravity = true;
-        TowersTimer.start();
-        isGameStarted = true;
-        ScoreText.setText(gameScore);
-        InstructionsText.renderable = false;
-    }
-
-    function gameOver() {
-        isGameOver = true;
-        Towers.forEachAlive(function(tower) {
-            tower.body.velocity.x = 0;
-        });
-        FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
-            spaceInTower.body.velocity.x = 0;
-        });
-        TowersTimer.stop();
-        Bird.events.onInputDown.addOnce(resetGame);
-        HurtSound.play();
     }
 
     /**
@@ -370,18 +412,122 @@
      * DON'T RENAME IT, IT'S JUST WORKING AND ALL
      */
     function flyBirdFuckWhyAreYouNotFlyingBitch() {
+        //Checks if game started
+        //If not started then this click we need startGame
         if (!isGameStarted) {
             startGame();
         } else if (!isGameOver) {
+            //Else if game started and game not overs
+            //Set Bird's velocity up in negative value
+            //And yep, she's go up
             Bird.body.velocity.y = -BIRD_FLAP;
+            //Also not forgot to play our FlapSound
             FlapSound.play();
+        } else if (isGameOver) {
+            //And if game over
+            //Then click or touch
+            //Will run game again
+            mainMenu();
         }
     }
 
+    //Count player's score
+    //spaceInTower param need for removing it from group
+    //when bird fly over it
     function addScore(spaceInTower) {
+        //Remove space from group
         FreeSpacesInTowers.remove(spaceInTower);
+        //Increase game's score by one
         ++gameScore;
+        //Set text to ScoreText with updated score
         ScoreText.setText(gameScore);
+        //And play ScoreSound
         ScoreSound.play();
+    }
+
+    /**
+     * This function need to set up default values for game-variables
+     * And show mainMenu
+     */
+    function mainMenu() {
+        //Update local variables
+        isGameStarted = false;
+        isGameOver = false;
+        gameScore = 0;
+
+        //Disable rendering of unused text
+        ScoreText.renderable = false;
+        HighScoreText.renderable = false;
+
+        //Set text for instruction
+        InstructionsText.setText("TOUCH TO FLY");
+
+        //Disable gravity for bird
+        Bird.body.allowGravity = false;
+        //Set angle to 0
+        Bird.angle = 0;
+        //Reset all bird's variables
+        //And set x and y to leftX and centerV
+        Bird.reset(Game.world.width / 10, Game.world.height / 2);
+        //Set scale twice
+        Bird.scale.setTo(2, 2);
+        //Play animation 'flying'
+        Bird.animations.play('flying');
+
+        //Remove all our "triggers"
+        FreeSpacesInTowers.removeAll();
+        //And towers
+        Towers.removeAll();
+
+        //Stops TowersTimer from spawning new towers in main menu
+        TowersTimer.stop();
+    }
+
+    /**
+     * Initialize new Game
+     */
+    function startGame() {
+        //Enable gravity for bird
+        Bird.body.allowGravity = true;
+
+        //Enable timer for towers
+        TowersTimer.start();
+
+        //Set that game is started
+        isGameStarted = true;
+
+        //Set text with current score
+        ScoreText.setText(gameScore);
+        ScoreText.renderable = true;
+
+        //Disable instructions text from render
+        TitleText.renderable = false;
+        InstructionsText.renderable = false;
+    }
+
+    //Call it when game over
+    function gameOver() {
+        //Set boolean that game is over
+        isGameOver = true;
+
+        //Set for all towers velocity to 0
+        Towers.forEachAlive(function(tower) {
+            tower.body.velocity.x = 0;
+        });
+
+        //Set for all our "triggers" velocity to 0
+        FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
+            spaceInTower.body.velocity.x = 0;
+        });
+
+        //Stops TowersTimer
+        TowersTimer.stop();
+
+        //Add once event to click on Bird
+        //And show MainMenu
+        Bird.events.onInputDown.addOnce(mainMenu);
+
+        //Play Hurt sound (Game is over)
+        HurtSound.play();
     }
 })();
