@@ -6,6 +6,8 @@
         FLAP = 420,
         SPAWN_RATE = 1 / 1.2,
         OPENING = 144,
+        CLOUDS_SHOW_MIN_TIME = 5000,
+        CLOUDS_SHOW_MAX_TIME = 10000,
         SCENE = '',
         WINDOW_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
         WINDOW_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
@@ -24,10 +26,12 @@
         Bird,
         Fence,
         FlapSound, ScoreSound, HurtSound,
+        AboutText, ScoreText,
 
         //VARIABLES FOR GAME-MANAGEMENT
         isGameStarted = false,
-        isGameOver = false;
+        isGameOver = false,
+        gameScore = 0;
 
     function onPreloadGame() {
         Game.load.spritesheet('bird', 'img/bird.png', 24, 24);
@@ -48,6 +52,7 @@
         createBird();
         createFence();
         createSounds();
+        createTexts();
         createControls();
         resetGame();
     }
@@ -124,11 +129,13 @@
             cloud.body.allowGravity = false;
             cloud.body.velocity.x = -SPEED / cloudScale;
             cloud.anchor.y = 0;
+
+            CloudsTimer.add(Game.rnd.integerInRange(CLOUDS_SHOW_MIN_TIME, CLOUDS_SHOW_MAX_TIME), makeNewCloud, this);
         }
 
         Clouds = Game.add.group();
-        CloudsTimer = new Phaser.Timer(Game);
-        CloudsTimer.add(4 * Math.random(), makeNewCloud);
+        CloudsTimer = Game.time.create(false);
+        CloudsTimer.add(0, makeNewCloud, this);
         CloudsTimer.start();
     }
 
@@ -189,6 +196,18 @@
         FlapSound = Game.add.audio('flap');
         ScoreSound = Game.add.audio('score');
         HurtSound = Game.add.audio('hurt');
+    }
+
+    /**
+     * Create Text objects for GUI
+     */
+    function createTexts() {
+        AboutText = Game.add.text(Game.world.width / 2, 10, 'Eugene Obrezkov\nghaiklor@gmail.com', {
+            font: 'Arial',
+            fill: '#FFFFFF',
+            align: 'center'
+        });
+        AboutText.text.anchor.x = 0.5;
     }
 
     /**
