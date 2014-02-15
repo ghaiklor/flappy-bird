@@ -4,7 +4,7 @@
         SPEED = 180,
         GRAVITY = 18,
         FLAP = 420,
-        SPAWN_RATE = 1 / 1.2,
+        TOWER_SPAWN_INTERVAL = 2000,
         OPENING = 144,
         CLOUDS_SHOW_MIN_TIME = 5000,
         CLOUDS_SHOW_MAX_TIME = 10000,
@@ -144,7 +144,7 @@
      */
     function createTowers() {
         function o() {
-            return OPENING + 60 * ((score > 50 ? 50 : 50 - score) / 50);
+            return OPENING + 60 * ((gameScore > 50 ? 50 : 50 - gameScore) / 50);
         }
 
         function makeNewTower(towerY, isFlipped) {
@@ -161,11 +161,14 @@
             var towerY = ((Game.world.height - 16 - o() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
                 bottomTower = makeNewTower(towerY),
                 topTower = makeNewTower(towerY, true);
+
+            TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
         }
 
         Towers = Game.add.group();
-        TowersTimer = new Phaser.Timer(Game);
-        TowersTimer.add(1 / SPAWN_RATE, makeNewTower);
+        TowersTimer = Game.time.create(false);
+        TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
+        TowersTimer.start();
     }
 
     /**
@@ -173,6 +176,7 @@
      */
     function createBird() {
         Bird = Game.add.sprite(20, 20, 'bird');
+        Bird.alive = true;
         Bird.anchor.setTo(0.5, 0.5);
         Bird.scale.setTo(2, 2);
         Bird.animations.add('flying', [0, 1, 2, 3], 10, true);
