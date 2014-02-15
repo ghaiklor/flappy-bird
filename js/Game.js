@@ -11,6 +11,10 @@
             CLOUDS_SHOW_MAX_TIME = 10000,
             MAX_DIFFICULT = 50,
             SCENE = '',
+            TITLE_TEXT = "FLAPPY BIRD",
+            INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
+            INSTRUCTIONS_TEXT_GAME_OVER = "TOUCH\nTO GO\nBACK",
+            AUTHOR_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com\n\nGraphic\nDima Lezhenko",
             WINDOW_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
             WINDOW_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
 
@@ -145,7 +149,12 @@
                 //Animate our Fence tilePosition
                 Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
             }
-            InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+
+            if (!isGameStarted || isGameOver) {
+                //Give effect for texts
+                TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+                InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+            }
         }
 
         //It's helper for me
@@ -335,6 +344,7 @@
                 TowersTimer = Game.time.create(false);
                 //Add TimerEvent for makeTowers method
                 TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
+                //Start timer
                 TowersTimer.start();
             }
         }
@@ -352,7 +362,7 @@
             //Give it name 'flying' and set 4 frames
             //Framerate will be 10
             //and animation will be looped
-            Bird.animations.add('flying', [0, 1, 2, 3], 10, true);
+            Bird.animations.add('flying', [0, 1, 2, 3, 2, 1, 0], 20, true);
             //Allow events for bird
             Bird.inputEnabled = true;
             //Set bird's body collide with world's bounds
@@ -401,7 +411,7 @@
          */
         function createTexts() {
             //Create text object for showing title of game
-            TitleText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "FLAPPY BIRD", {
+            TitleText = Game.add.text(Game.world.width / 2, Game.world.height / 3, TITLE_TEXT, {
                 font: '32px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
@@ -413,9 +423,11 @@
             TitleText.angle = 5;
 
             //Create text with author
-            AboutText = Game.add.text(Game.world.width - 10, 10, 'Developer\nEugene Obrezkov\nghaiklor@gmail.com\n\nGraphic\nDima Lezhenko', {
-                font: '10px "Press Start 2P"',
-                fill: '#000000',
+            AboutText = Game.add.text(Game.world.width - 10, 10, AUTHOR_TEXT, {
+                font: '14px "Press Start 2P"',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 3,
                 align: 'center'
             });
             //Set anchor to right for set text in right corner
@@ -435,7 +447,7 @@
 
             //Create text object with instruction what to do
             //i.e. Touch Bird to start game
-            InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 3, "TOUCH TO FLY", {
+            InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 3, INSTRUCTIONS_TEXT, {
                 font: '16px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
@@ -520,12 +532,15 @@
             gameScore = 0;
 
             //Configure text objects
-            TitleText.renderable = true;
             ScoreText.renderable = false;
-            InstructionsText.renderable = true;
             HighScoreText.renderable = false;
-            InstructionsText.setText("TOUCH TO FLY");
-            TitleText.setText("FLAPPY BIRD");
+
+            AboutText.setText(AUTHOR_TEXT);
+            TitleText.setText(TITLE_TEXT);
+            InstructionsText.setText(INSTRUCTIONS_TEXT);
+            AboutText.renderable = true;
+            TitleText.renderable = true;
+            InstructionsText.renderable = true;
 
             //Disable gravity for bird
             Bird.body.allowGravity = false;
@@ -565,8 +580,10 @@
             ScoreText.renderable = true;
 
             //Disable instructions text from render
+            AboutText.renderable = false;
             TitleText.renderable = false;
             InstructionsText.renderable = false;
+            HighScoreText.renderable = false;
         }
 
         //Call it when game over
@@ -597,10 +614,27 @@
             ScoreText.renderable = false;
             HighScoreText.renderable = true;
             InstructionsText.renderable = true;
-            InstructionsText.setText("TOUCH TO FLY");
-            HighScoreText.setText("HIGHSCORE: " + 20 + "\nYOUR SCORE: " + gameScore);
+            InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
+            HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\nYOUR SCORE: " + gameScore);
+        }
+
+        /**
+         * Get highscore
+         * @param  {integer} score Current score
+         */
+        function getHighscore(score) {
+            var highscore = window.localStorage.getItem('highscore');
+            if (score > highscore || highscore === null) {
+                highscore = score;
+                window.localStorage.setItem('highscore', highscore);
+            }
+
+            return highscore;
         }
     };
 
-    window.addEventListener('load', initializeGame, false);
+    window.onload = function() {
+        initializeGame();
+        // window.addEventListener('load', initializeGame, false);
+    };
 })();
