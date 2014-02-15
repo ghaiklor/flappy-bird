@@ -453,6 +453,8 @@
         //If not started then this click we need startGame
         if (!isGameStarted) {
             startGame();
+            Bird.body.velocity.y = -BIRD_FLAP;
+            FlapSound.play();
         } else if (!isGameOver) {
             //Else if game started and game not overs
             //Set Bird's velocity up in negative value
