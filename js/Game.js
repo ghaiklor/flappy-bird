@@ -22,7 +22,7 @@
         //HELPER VARIABLES FOR SAVING GAME-OBJECTS
         Background,
         Clouds, CloudsTimer,
-        Towers, TowersTimer,
+        FreeSpaceInTower, Towers, TowersTimer,
         Bird,
         Fence,
         FlapSound, ScoreSound, HurtSound,
@@ -58,11 +58,12 @@
     }
 
     function onUpdateGame() {
+        //Make Bird.damage()
         if (isGameStarted) {
-            var dvy = FLAP + Bird.body.velocity.y;
-            Bird.angle = (90 * dvy / FLAP) - 180;
+            var divingInAir = FLAP + Bird.body.velocity.y;
+            Bird.angle = (90 * divingInAir / FLAP) - 180;
             if (Bird.angle < -30) {
-                Bird.angle = 30;
+                Bird.angle = -30;
             }
 
             if (isGameOver || Bird.angle > 90 || Bird.angle < -90) {
@@ -72,25 +73,41 @@
             } else {
                 Bird.animations.play('flying');
             }
-        } else if (isGameOver) {
-            if (Bird.scale.x < 4) {
-                Bird.scale.setTo(Bird.scale.x * 1.2, Bird.scale.y * 1.2);
+
+            if (isGameOver) {
+                if (Bird.scale.x < 4) {
+                    Bird.scale.setTo(Bird.scale.x * 1.2, Bird.scale.y * 1.2);
+                }
+            } else {
+                Game.physics.overlap(Bird, Towers, gameOver);
+                if (!isGameOver && Bird.body.bottom >= Game.world.bounds.bottom) {
+                    gameOver();
+                }
+
+                Game.physics.overlap(Bird, FreeSpaceInTower, addScore);
             }
+
+            Towers.forEachAlive(function(tower) {
+                if (tower.x + tower.width < Game.world.bounds.left) {
+                    tower.kill();
+                }
+            });
+            TowersTimer.update();
         } else {
-            Game.physics.overlap(Bird, Towers);
+            Bird.y = (Game.world.height / 2) + 8 * Math.cos(Game.time.now / 200);
         }
 
-        Towers.forEachAlive(function(tower) {
-            if (tower.x + tower.width < Game.world.bounds.left) {
-                tower.kill();
-            }
-        });
-
+        ScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+        CloudsTimer.update();
         Clouds.forEachAlive(function(cloud) {
             if (cloud.x + cloud.width < Game.world.bounds.left) {
                 cloud.kill();
             }
         });
+
+        if (!isGameOver) {
+            Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
+        }
     }
 
     function onRenderGame() {
@@ -98,6 +115,9 @@
             Game.debug.renderSpriteBody(Bird);
             Towers.forEachAlive(function(tower) {
                 Game.debug.renderSpriteBody(tower);
+            });
+            FreeSpaceInTower.forEachAlive(function(spaceInTower) {
+                Game.debug.renderSpriteBody(spaceInTower);
             });
         }
     }
@@ -162,9 +182,16 @@
                 bottomTower = makeNewTower(towerY),
                 topTower = makeNewTower(towerY, true);
 
+            var spaceInTower = FreeSpaceInTower.create(topTower.x + topTower.width, 0);
+            spaceInTower.width = 2;
+            spaceInTower.height = Game.world.height;
+            spaceInTower.body.allowGravity = false;
+            spaceInTower.body.velocity.x = -SPEED;
+
             TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
         }
 
+        FreeSpaceInTower = Game.add.group();
         Towers = Game.add.group();
         TowersTimer = Game.time.create(false);
         TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
@@ -177,12 +204,20 @@
     function createBird() {
         Bird = Game.add.sprite(20, 20, 'bird');
         Bird.alive = true;
+        Bird.health = 5;
         Bird.anchor.setTo(0.5, 0.5);
         Bird.scale.setTo(2, 2);
         Bird.animations.add('flying', [0, 1, 2, 3], 10, true);
         Bird.inputEnabled = true;
+        Bird.body.bounce.setTo(0.5, 0.6);
+        Bird.body.collideCallback = function() {
+            console.log('test');
+        };
         Bird.body.collideWorldBounds = true;
         Bird.body.gravity.y = GRAVITY;
+        // Bird.body.linearDamping = 1.5;
+        Bird.body.mass = 2;
+        Bird.body.speed = 10;
     }
 
     /**
@@ -206,12 +241,21 @@
      * Create Text objects for GUI
      */
     function createTexts() {
-        AboutText = Game.add.text(Game.world.width / 2, 10, 'Eugene Obrezkov\nghaiklor@gmail.com', {
+        AboutText = Game.add.text(Game.world.width / 20, 10, 'Eugene Obrezkov\nghaiklor@gmail.com', {
             font: 'Arial',
-            fill: '#FFFFFF',
+            fill: '#000000',
             align: 'center'
         });
-        AboutText.text.anchor.x = 0.5;
+        AboutText.anchor.x = 0.5;
+
+        ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 5, "", {
+            font: '32px Arial',
+            fill: '#FFFFFF',
+            stroke: '#443300',
+            strokeThickness: 8,
+            align: 'center'
+        });
+        ScoreText.anchor.setTo(0.5, 0.5);
     }
 
     /**
@@ -229,11 +273,14 @@
     function resetGame() {
         isGameStarted = false;
         isGameOver = false;
-        Bird.body.allowGravity = false;
-        Bird.angle = 0;
+        gameScore = 0;
         Bird.reset(Game.world.width / 4, Game.world.height / 2);
+        Bird.angle = 0;
+        Bird.body.allowGravity = false;
         Bird.animations.play('flying');
+        FreeSpaceInTower.removeAll();
         Towers.removeAll();
+        TowersTimer.stop();
     }
 
     /**
@@ -243,6 +290,7 @@
         Bird.body.allowGravity = true;
         TowersTimer.start();
         isGameStarted = true;
+        ScoreText.setText(gameScore);
     }
 
     function gameOver() {
@@ -250,6 +298,11 @@
         Towers.forEachAlive(function(tower) {
             tower.body.velocity.x = 0;
         });
+        FreeSpaceInTower.forEachAlive(function(spaceInTower) {
+            spaceInTower.body.velocity.x = 0;
+        });
+        TowersTimer.stop();
+        Bird.events.onInputDown.addOnce(resetGame);
         HurtSound.play();
     }
 
@@ -266,5 +319,12 @@
         } else {
 
         }
+    }
+
+    function addScore(spaceInTower) {
+        FreeSpaceInTower.remove(spaceInTower);
+        ++gameScore;
+        ScoreText.setText(gameScore);
+        ScoreSound.play();
     }
 })();
