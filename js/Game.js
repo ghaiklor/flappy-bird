@@ -477,7 +477,7 @@
         //////////////
         //INIT CORE //
         //////////////
-        var Game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.AUTO, SCENE);
+        var Game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.CANVAS, SCENE);
         Game.state.add('Boot', BootGameState, false);
         Game.state.add('Preloader', PreloaderGameState, false);
         Game.state.add('MainMenu', MainMenuState, false);
