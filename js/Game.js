@@ -34,8 +34,8 @@
             Bird,
             Town,
             FlapSound, ScoreSound, HurtSound,
-            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreTitleText, HighScoreText, PostScoreText, MainMenuText, LoadingText,
-            PostScoreClickArea, MainMenuClickArea,
+            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreTitleText, HighScoreText, PostScoreText, LoadingText,
+            PostScoreClickArea,
             isScorePosted = false,
             Leaderboard;
 
@@ -123,7 +123,6 @@
             HighScoreTitleText.setText("");
             HighScoreText.setText("");
             PostScoreText.setText("");
-            MainMenuText.setText("");
 
             Game.input.onDown.addOnce(function() {
                 birdFlap();
@@ -164,7 +163,6 @@
             HighScoreTitleText.setText("");
             HighScoreText.setText("");
             PostScoreText.setText("");
-            MainMenuText.setText("");
             ScoreText.setText(gameScore);
 
             Bird.body.allowGravity = true;
@@ -258,7 +256,6 @@
             PostScoreText.setText(HIGHSCORE_SUBMIT);
             HighScoreTitleText.setText(HIGHSCORE_TITLE);
             HighScoreText.setText(LOADING_TEXT);
-            MainMenuText.setText(BACK_TO_MENU_TEXT);
 
             Bird.angle = 180;
             Bird.animations.stop();
@@ -267,7 +264,6 @@
 
         GameOverState.update = function() {
             HighScoreTitleText.angle = 5 * Math.cos(Game.time.now / 100);
-            MainMenuText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
             PostScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
         };
 
@@ -327,8 +323,7 @@
                 postScore();
                 PostScoreText.setText("");
                 isScorePosted = true;
-            } else if (MainMenuClickArea && Phaser.Rectangle.contains(MainMenuClickArea, Game.input.x, Game.input.y)) {
-                FlapSound.play();
+            } else {
                 Game.input.onDown.remove(HighScoreStateClick);
                 Game.state.start('MainMenu', true, false);
             }
@@ -567,7 +562,7 @@
             });
             HighScoreText.anchor.setTo(0.5, 0.5);
 
-            PostScoreText = Game.add.text(Game.world.width - Game.world.width / 3, Game.world.height - Game.world.height / 4, "", {
+            PostScoreText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 4, "", {
                 font: '16px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
@@ -576,16 +571,6 @@
             });
             PostScoreText.anchor.setTo(0.5, 0.5);
             PostScoreClickArea = new Phaser.Rectangle(PostScoreText.x - PostScoreText.width / 2, PostScoreText.y - PostScoreText.height / 2, PostScoreText.width, PostScoreText.height);
-
-            MainMenuText = Game.add.text(Game.world.width / 3, Game.world.height - Game.world.height / 4, "", {
-                font: '16px "Press Start 2P"',
-                fill: '#FFFFFF',
-                stroke: '#000000',
-                strokeThickness: 2,
-                align: 'center'
-            });
-            MainMenuText.anchor.setTo(0.5, 0.5);
-            MainMenuClickArea = new Phaser.Rectangle(MainMenuText.x - MainMenuText.width / 2, MainMenuText.y - MainMenuText.height / 2, MainMenuText.width, MainMenuText.height);
         };
 
         //////////////////
