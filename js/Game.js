@@ -253,8 +253,8 @@
             TitleText.setText("");
             DeveloperText.setText("");
             GraphicText.setText("");
-            ScoreText.setText("");
             InstructionsText.setText("");
+            ScoreText.setText("YOUR SCORE: " + gameScore);
             PostScoreText.setText(HIGHSCORE_SUBMIT);
             HighScoreTitleText.setText(HIGHSCORE_TITLE);
             HighScoreText.setText(LOADING_TEXT);
@@ -265,7 +265,8 @@
         };
 
         GameOverState.update = function() {
-            HighScoreTitleText.angle = 5 * Math.cos(Game.time.now / 100);
+            ScoreText.angle = 1 * Math.sin(Game.time.now / 100);
+            HighScoreTitleText.angle = 1 * Math.cos(Game.time.now / 100);
             PostScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
         };
 
@@ -437,7 +438,7 @@
         /////////////////
         var createTown = function createTown() {
             Town = Game.add.tileSprite(0, Game.world.height - 128, Game.world.width, 128, 'town');
-            Town.tileScale.setTo(2, 2);
+            // Town.tileScale.setTo(2, 2);
         };
 
         ////////////////
@@ -537,7 +538,7 @@
             });
             InstructionsText.anchor.setTo(0.5, 0.5);
 
-            ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "", {
+            ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 4, "", {
                 font: '32px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
