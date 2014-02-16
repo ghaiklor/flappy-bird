@@ -34,9 +34,11 @@
             Bird,
             Town,
             FlapSound, ScoreSound, HurtSound,
+            SoundEnabledIcon, SoundDisabledIcon,
             TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreTitleText, HighScoreText, PostScoreText, LoadingText,
             PostScoreClickArea,
             isScorePosted = false,
+            isSoundEnabled = true,
             Leaderboard;
 
         //////////////////////////////////
@@ -216,7 +218,9 @@
                 Game.input.onDown.add(HighScoreStateClick);
             }, 1000);
 
-            HurtSound.play();
+            if (isSoundEnabled) {
+                HurtSound.play();
+            }
 
             Pipes.forEachAlive(function(pipe) {
                 pipe.body.velocity.x = 0;
@@ -253,7 +257,9 @@
         ///////////////////
         var birdFlap = function birdFlap() {
             Bird.body.velocity.y = -BIRD_FLAP;
-            FlapSound.play();
+            if (isSoundEnabled) {
+                FlapSound.play();
+            }
         };
 
         ////////////////////////////////////
@@ -263,7 +269,9 @@
             FreeSpacesInPipes.remove(spaceInPipe);
             ++gameScore;
             ScoreText.setText(gameScore);
-            ScoreSound.play();
+            if (isSoundEnabled) {
+                ScoreSound.play();
+            }
         };
 
         ///////////////////////
@@ -300,7 +308,9 @@
 
         var HighScoreStateClick = function HighScoreStateClick() {
             if (PostScoreClickArea && Phaser.Rectangle.contains(PostScoreClickArea, Game.input.x, Game.input.y) && !isScorePosted) {
-                FlapSound.play();
+                if (isSoundEnabled) {
+                    FlapSound.play();
+                }
                 postScore();
                 PostScoreText.setText("");
                 isScorePosted = true;
@@ -327,6 +337,8 @@
 
             Game.load.image('town', 'img/town.png');
             Game.load.image('pipe', 'img/pipe.png');
+            Game.load.image('soundOn', 'img/soundOn.png');
+            Game.load.image('soundOff', 'img/soundOff.png');
 
             Game.load.audio('flap', 'wav/flap.wav');
             Game.load.audio('hurt', 'wav/hurt.wav');
@@ -552,6 +564,28 @@
         //Create Sounds //
         //////////////////
         var createSounds = function createSounds() {
+            function disableSound() {
+                SoundDisabledIcon.renderable = true;
+                SoundEnabledIcon.renderable = false;
+                isSoundEnabled = false;
+            }
+
+            function enableSound() {
+                SoundEnabledIcon.renderable = true;
+                SoundDisabledIcon.renderable = false;
+                isSoundEnabled = true;
+            }
+
+            SoundEnabledIcon = Game.add.sprite(10, 10, 'soundOn');
+            SoundEnabledIcon.inputEnabled = true;
+            // SoundEnabledIcon.input
+            // SoundEnabledIcon.events.onInputDown = disableSound;
+
+            SoundDisabledIcon = Game.add.sprite(10, 10, 'soundOff');
+            SoundDisabledIcon.inputEnabled = true;
+            SoundDisabledIcon.renderable = false;
+            // SoundDisabledIcon.events.onInputDown = enableSound;
+
             FlapSound = Game.add.audio('flap');
             ScoreSound = Game.add.audio('score');
             HurtSound = Game.add.audio('hurt');
