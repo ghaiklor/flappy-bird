@@ -7,8 +7,8 @@
             SPEED = 180,
             GRAVITY = 1800,
             BIRD_FLAP = 550,
-            TOWER_SPAWN_INTERVAL = 2000,
-            AVAILABLE_SPACE_BETWEEN_TOWERS = 150,
+            PIPE_SPAWN_INTERVAL = 2000,
+            AVAILABLE_SPACE_BETWEEN_PIPES = 150,
             CLOUDS_SHOW_MIN_TIME = 5000,
             CLOUDS_SHOW_MAX_TIME = 10000,
             MAX_DIFFICULT = 50,
@@ -26,7 +26,7 @@
         /////////////////////////////////////////////
         var Background,
             Clouds, CloudsTimer,
-            Towers, TowersTimer, FreeSpacesInTowers,
+            Pipes, PipesTimer, FreeSpacesInPipes,
             Bird,
             Fence,
             FlapSound, ScoreSound, HurtSound,
@@ -68,7 +68,7 @@
             createBackground();
             createRain();
             createClouds();
-            createTowers(false);
+            createPipes(false);
             createFence();
             createBird();
             createTexts();
@@ -107,8 +107,8 @@
                 Game.state.start('Game', false, false);
             });
 
-            Towers.removeAll();
-            FreeSpacesInTowers.removeAll();
+            Pipes.removeAll();
+            FreeSpacesInPipes.removeAll();
         };
 
         MainMenuState.update = function() {
@@ -133,7 +133,7 @@
         var GameState = new Phaser.State();
 
         GameState.create = function() {
-            createTowers(true);
+            createPipes(true);
 
             AboutText.setText("");
             TitleText.setText("");
@@ -158,11 +158,11 @@
                 Game.state.start('GameOver', false, false);
             }
 
-            Game.physics.overlap(Bird, Towers, function() {
+            Game.physics.overlap(Bird, Pipes, function() {
                 Game.state.start('GameOver', false, false);
             });
 
-            Game.physics.overlap(Bird, FreeSpacesInTowers, addScore);
+            Game.physics.overlap(Bird, FreeSpacesInPipes, addScore);
 
             Clouds.forEachAlive(function(cloud) {
                 if (cloud.x + cloud.width < Game.world.bounds.left) {
@@ -170,9 +170,9 @@
                 }
             });
 
-            Towers.forEachAlive(function(tower) {
-                if (tower.x + tower.width < Game.world.bounds.left) {
-                    tower.kill();
+            Pipes.forEachAlive(function(pipe) {
+                if (pipe.x + pipe.width < Game.world.bounds.left) {
+                    pipe.kill();
                 }
             });
 
@@ -189,13 +189,13 @@
 
                 Game.debug.renderQuadTree(Game.physics.quadTree);
 
-                Towers.forEachAlive(function(tower) {
-                    Game.debug.renderSpriteBody(tower);
-                    Game.debug.renderSpriteCorners(tower, true, true);
+                Pipes.forEachAlive(function(pipe) {
+                    Game.debug.renderSpriteBody(pipe);
+                    Game.debug.renderSpriteCorners(pipe, true, true);
                 });
 
-                FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
-                    Game.debug.renderSpriteBody(spaceInTower);
+                FreeSpacesInPipes.forEachAlive(function(spaceInPipe) {
+                    Game.debug.renderSpriteBody(spaceInPipe);
                 });
             }
         };
@@ -210,15 +210,15 @@
 
             HurtSound.play();
 
-            Towers.forEachAlive(function(tower) {
-                tower.body.velocity.x = 0;
+            Pipes.forEachAlive(function(pipe) {
+                pipe.body.velocity.x = 0;
             });
 
-            FreeSpacesInTowers.forEachAlive(function(spaceInTower) {
-                spaceInTower.body.velocity.x = 0;
+            FreeSpacesInPipes.forEachAlive(function(spaceInPipe) {
+                spaceInPipe.body.velocity.x = 0;
             });
 
-            TowersTimer.stop();
+            PipesTimer.stop();
 
             AboutText.setText("");
             TitleText.setText("");
@@ -253,8 +253,8 @@
         ////////////////////////////////////
         // Add score to current gameScore //
         ////////////////////////////////////
-        var addScore = function addScore(_, spaceInTower) {
-            FreeSpacesInTowers.remove(spaceInTower);
+        var addScore = function addScore(_, spaceInPipe) {
+            FreeSpacesInPipes.remove(spaceInPipe);
             ++gameScore;
             ScoreText.setText(gameScore);
             ScoreSound.play();
@@ -277,11 +277,13 @@
         //Load assets in game //
         ////////////////////////
         var loadAssets = function loadAssets() {
-            Game.load.spritesheet('bird', 'img/bird.png', 48, 34);
+            Game.load.spritesheet('bird', 'img/bird.png', 48, 35);
             Game.load.spritesheet('clouds', 'img/clouds.png', 128, 64);
             Game.load.spritesheet('rain', 'img/rain.png', 17, 17);
+
             Game.load.image('fence', 'img/fence.png');
-            Game.load.image('tower', 'img/tower.png');
+            Game.load.image('pipe', 'img/pipe.png');
+
             Game.load.audio('flap', 'wav/flap.wav');
             Game.load.audio('hurt', 'wav/hurt.wav');
             Game.load.audio('score', 'wav/score.wav');
@@ -360,44 +362,44 @@
         };
 
         //////////////////
-        //Create towers //
+        //Create Pipes //
         //////////////////
-        var createTowers = function createTowers(timer) {
+        var createPipes = function createPipes(timer) {
             function calcDifficult() {
-                return AVAILABLE_SPACE_BETWEEN_TOWERS + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
+                return AVAILABLE_SPACE_BETWEEN_PIPES + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
             }
 
-            function makeNewTower(towerY, isFlipped) {
-                var tower = Towers.create(Game.world.width, towerY + (isFlipped ? -calcDifficult() : calcDifficult()) / 2, 'tower');
+            function makeNewPipe(pipeY, isFlipped) {
+                var pipe = Pipes.create(Game.world.width, pipeY + (isFlipped ? -calcDifficult() : calcDifficult()) / 2, 'pipe');
 
-                tower.body.allowGravity = false;
-                tower.scale.setTo(2, isFlipped ? -2 : 2);
-                tower.body.offset.y = isFlipped ? -tower.body.height * 2 : 0;
-                tower.body.velocity.x = -SPEED;
-                return tower;
+                pipe.body.allowGravity = false;
+                pipe.scale.setTo(2, isFlipped ? -2 : 2);
+                pipe.body.offset.y = isFlipped ? -pipe.body.height * 2 : 0;
+                pipe.body.velocity.x = -SPEED;
+                return pipe;
             }
 
-            function makeTowers() {
-                var towerY = ((Game.world.height - 16 - calcDifficult() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
-                    bottomTower = makeNewTower(towerY),
-                    topTower = makeNewTower(towerY, true);
+            function makePipes() {
+                var pipeY = ((Game.world.height - 16 - calcDifficult() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
+                    bottomPipe = makeNewPipe(pipeY),
+                    topPipe = makeNewPipe(pipeY, true),
+                    spaceInPipe = FreeSpacesInPipes.create(topPipe.x + topPipe.width, 0);
 
-                var spaceInTower = FreeSpacesInTowers.create(topTower.x + topTower.width, 0);
-                spaceInTower.width = 2;
-                spaceInTower.height = Game.world.height;
-                spaceInTower.body.allowGravity = false;
-                spaceInTower.body.velocity.x = -SPEED;
+                spaceInPipe.width = 2;
+                spaceInPipe.height = Game.world.height;
+                spaceInPipe.body.allowGravity = false;
+                spaceInPipe.body.velocity.x = -SPEED;
 
-                TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
+                PipesTimer.add(PIPE_SPAWN_INTERVAL, makePipes, this);
             }
 
             if (timer) {
-                TowersTimer = Game.time.create(false);
-                TowersTimer.add(TOWER_SPAWN_INTERVAL, makeTowers, this);
-                TowersTimer.start();
+                PipesTimer = Game.time.create(false);
+                PipesTimer.add(PIPE_SPAWN_INTERVAL, makePipes, this);
+                PipesTimer.start();
             } else {
-                Towers = Game.add.group();
-                FreeSpacesInTowers = Game.add.group();
+                Pipes = Game.add.group();
+                FreeSpacesInPipes = Game.add.group();
             }
         };
 
