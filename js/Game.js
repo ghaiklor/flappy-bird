@@ -56,6 +56,10 @@
             Game.state.start('Preloader', false, false);
         };
 
+        BootGameState.upload = function() {
+            LoadingText.angle = 5 * Math.cos(Game.time.now / 100);
+        };
+
         /////////////////////////////////////
         //State - Preloader (Loading Assets) //
         /////////////////////////////////////
