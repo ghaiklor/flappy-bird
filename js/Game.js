@@ -15,8 +15,10 @@
             MAX_DIFFICULT = 50,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
+            HIGHSCORE_TITLE = "HIGHSCORES",
+            HIGHSCORE_SUBMIT = "POST SCORE",
             INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
-            INSTRUCTIONS_TEXT_GAME_OVER = "TOUCH\nFOR GO\nBACK",
+            BACK_TO_MENU_TEXT = "MAIN MENU",
             DEVELOPER_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com",
             GRAPHIC_TEXT = "Graphic\nDmitry Lezhenko\ndima.lezhenko@gmail.com",
             LOADING_TEXT = "LOADING...",
@@ -32,7 +34,9 @@
             Bird,
             Town,
             FlapSound, ScoreSound, HurtSound,
-            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreText, LoadingText,
+            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreTitleText, HighScoreText, PostScoreText, MainMenuText, LoadingText,
+            PostScoreClickArea, MainMenuClickArea,
+            isScorePosted = false,
             Leaderboard;
 
         //////////////////////////////////
@@ -91,6 +95,8 @@
         var MainMenuState = new Phaser.State();
 
         MainMenuState.create = function() {
+            isScorePosted = false;
+
             createBackground();
             createRain();
             createClouds();
@@ -108,12 +114,16 @@
             Bird.body.gravity.y = 0;
             Bird.animations.play('flying');
 
+
+            TitleText.setText(TITLE_TEXT);
             DeveloperText.setText(DEVELOPER_TEXT);
             GraphicText.setText(GRAPHIC_TEXT);
-            TitleText.setText(TITLE_TEXT);
             InstructionsText.setText(INSTRUCTIONS_TEXT);
             ScoreText.setText("");
+            HighScoreTitleText.setText("");
             HighScoreText.setText("");
+            PostScoreText.setText("");
+            MainMenuText.setText("");
 
             Game.input.onDown.addOnce(function() {
                 birdFlap();
@@ -136,6 +146,7 @@
 
             Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
             TitleText.angle = 5 * Math.cos(Game.time.now / 100);
+            InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
         };
 
         /////////////////////////////////////
@@ -146,11 +157,14 @@
         GameState.create = function() {
             createPipes(true);
 
+            TitleText.setText("");
             DeveloperText.setText("");
             GraphicText.setText("");
-            TitleText.setText("");
             InstructionsText.setText("");
+            HighScoreTitleText.setText("");
             HighScoreText.setText("");
+            PostScoreText.setText("");
+            MainMenuText.setText("");
             ScoreText.setText(gameScore);
 
             Bird.body.allowGravity = true;
@@ -220,6 +234,7 @@
 
         GameOverState.create = function() {
             Game.input.onDown.remove(birdFlap);
+            Game.input.onDown.add(HighScoreStateClick);
 
             HurtSound.play();
 
@@ -233,41 +248,45 @@
 
             PipesTimer.stop();
 
+            TitleText.setText("");
             DeveloperText.setText("");
             GraphicText.setText("");
-            TitleText.setText("");
             ScoreText.setText("");
             InstructionsText.setText("");
-            HighScoreText.setText("");
+            PostScoreText.setText(HIGHSCORE_SUBMIT);
+            HighScoreTitleText.setText(HIGHSCORE_TITLE);
+            HighScoreText.setText(LOADING_TEXT);
+            MainMenuText.setText(BACK_TO_MENU_TEXT);
 
-            Leaderboard.post({
-                score: gameScore
-            }, function() {
-                Leaderboard.show({
-                    sort: 'desc',
-                    // cumulative: false,
-                    best: true,
-                    // limit: 10,
-                    // self: false,
-                    // friends: false,
-                    // showPersonal: false
-                });
+            Leaderboard.fetch({
+                sort: 'desc',
+                best: true
+            }, function(results) {
+                var text = "";
+                for (var i in results) {
+                    if (results.hasOwnProperty(i)) {
+                        text += results[i].rank + '. ' + results[i].name + ' ' + results[i].score + '\n\n';
+                    }
+                }
+                HighScoreText.setText(text);
             });
 
             Bird.angle = 180;
             Bird.animations.stop();
             Bird.frame = 3;
 
-            setTimeout(function() {
-                InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
-                Game.input.onDown.addOnce(function() {
-                    Game.state.start('MainMenu', true, false);
-                });
-            }, 2000);
+            // setTimeout(function() {
+            //     InstructionsText.setText(BACK_TO_MENU_TEXT);
+            //     Game.input.onDown.addOnce(function() {
+            //         Game.state.start('MainMenu', true, false);
+            //     });
+            // }, 2000);
         };
 
         GameOverState.update = function() {
-            HighScoreText.angle = 5 * Math.cos(Game.time.now / 100);
+            HighScoreTitleText.angle = 5 * Math.cos(Game.time.now / 100);
+            MainMenuText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+            PostScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
         };
 
         ///////////////////
@@ -286,6 +305,42 @@
             ++gameScore;
             ScoreText.setText(gameScore);
             ScoreSound.play();
+        };
+
+        ///////////////////////
+        //Post score to Clay //
+        ///////////////////////
+        var postScore = function postScore() {
+            Leaderboard.post({
+                score: gameScore
+            }, function() {
+                HighScoreText.setText(LOADING_TEXT);
+                Leaderboard.fetch({
+                    sort: 'desc',
+                    best: true
+                }, function(results) {
+                    var text = "";
+                    for (var i in results) {
+                        if (results.hasOwnProperty(i)) {
+                            text += results[i].rank + '. ' + results[i].name + ' ' + results[i].score + '\n\n';
+                        }
+                    }
+                    HighScoreText.setText(text);
+                });
+            });
+        };
+
+        var HighScoreStateClick = function HighScoreStateClick() {
+            if (PostScoreClickArea && Phaser.Rectangle.contains(PostScoreClickArea, Game.input.x, Game.input.y) && !isScorePosted) {
+                FlapSound.play();
+                postScore();
+                PostScoreText.setText("");
+                isScorePosted = true;
+            } else if (MainMenuClickArea && Phaser.Rectangle.contains(MainMenuClickArea, Game.input.x, Game.input.y)) {
+                FlapSound.play();
+                Game.input.onDown.remove(HighScoreStateClick);
+                Game.state.start('MainMenu', true, false);
+            }
         };
 
         ///////////////////
@@ -503,14 +558,43 @@
             });
             ScoreText.anchor.setTo(0.5, 0.5);
 
-            HighScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 3, "", {
-                font: '24px "Press Start 2P"',
-                fill: '#fff',
-                stroke: '#430',
-                strokeThickness: 8,
+            HighScoreTitleText = Game.add.text(Game.world.width / 2, Game.world.height / 6, "", {
+                font: '32px "Press Start 2P"',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 3,
+                align: 'center'
+            });
+            HighScoreTitleText.anchor.setTo(0.5, 0.5);
+
+            HighScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 2, "", {
+                font: '16px "Press Start 2P"',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 2,
                 align: 'center'
             });
             HighScoreText.anchor.setTo(0.5, 0.5);
+
+            PostScoreText = Game.add.text(Game.world.width - Game.world.width / 3, Game.world.height - Game.world.height / 4, "", {
+                font: '16px "Press Start 2P"',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 2,
+                align: 'center'
+            });
+            PostScoreText.anchor.setTo(0.5, 0.5);
+            PostScoreClickArea = new Phaser.Rectangle(PostScoreText.x - PostScoreText.width / 2, PostScoreText.y - PostScoreText.height / 2, PostScoreText.width, PostScoreText.height);
+
+            MainMenuText = Game.add.text(Game.world.width / 3, Game.world.height - Game.world.height / 4, "", {
+                font: '16px "Press Start 2P"',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 2,
+                align: 'center'
+            });
+            MainMenuText.anchor.setTo(0.5, 0.5);
+            MainMenuClickArea = new Phaser.Rectangle(MainMenuText.x - MainMenuText.width / 2, MainMenuText.y - MainMenuText.height / 2, MainMenuText.width, MainMenuText.height);
         };
 
         //////////////////
