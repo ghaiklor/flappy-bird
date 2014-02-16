@@ -234,7 +234,9 @@
             getScore();
 
             Game.input.onDown.remove(birdFlap);
-            Game.input.onDown.add(HighScoreStateClick);
+            setTimeout(function() {
+                Game.input.onDown.add(HighScoreStateClick);
+            }, 1000);
 
             HurtSound.play();
 
