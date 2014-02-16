@@ -8,16 +8,17 @@
             GRAVITY = 1800,
             BIRD_FLAP = 550,
             PIPE_SPAWN_MIN_INTERVAL = 1000,
-            PIPE_SPAWN_MAX_INTERVAL = 1500,
+            PIPE_SPAWN_MAX_INTERVAL = 3000,
             AVAILABLE_SPACE_BETWEEN_PIPES = 120,
-            CLOUDS_SHOW_MIN_TIME = 2000,
+            CLOUDS_SHOW_MIN_TIME = 1000,
             CLOUDS_SHOW_MAX_TIME = 3000,
-            MAX_DIFFICULT = 100,
+            MAX_DIFFICULT = 50,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
             INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
             INSTRUCTIONS_TEXT_GAME_OVER = "TOUCH\nFOR GO\nBACK",
-            ABOUT_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com\n\n\nGraphic\nDima Lezhenko",
+            DEVELOPER_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com",
+            GRAPHIC_TEXT = "Graphic\nDmitry Lezhenko\ndima.lezhenko@gmail.com",
             LOADING_TEXT = "LOADING...",
             WINDOW_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
             WINDOW_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
@@ -31,7 +32,7 @@
             Bird,
             Town,
             FlapSound, ScoreSound, HurtSound,
-            TitleText, AboutText, ScoreText, InstructionsText, HighScoreText, LoadingText;
+            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreText, LoadingText;
 
         //////////////////////////////////
         //VARIABLES FOR GAME-MANAGEMENT //
@@ -56,7 +57,7 @@
             Game.state.start('Preloader', false, false);
         };
 
-        BootGameState.upload = function() {
+        BootGameState.update = function() {
             LoadingText.angle = 5 * Math.cos(Game.time.now / 100);
         };
 
@@ -106,7 +107,8 @@
             Bird.body.gravity.y = 0;
             Bird.animations.play('flying');
 
-            AboutText.setText(ABOUT_TEXT);
+            DeveloperText.setText(DEVELOPER_TEXT);
+            GraphicText.setText(GRAPHIC_TEXT);
             TitleText.setText(TITLE_TEXT);
             InstructionsText.setText(INSTRUCTIONS_TEXT);
             ScoreText.setText("");
@@ -131,8 +133,6 @@
                 }
             });
 
-            // TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
-            // InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
             Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
             TitleText.angle = 5 * Math.cos(Game.time.now / 100);
         };
@@ -145,7 +145,8 @@
         GameState.create = function() {
             createPipes(true);
 
-            AboutText.setText("");
+            DeveloperText.setText("");
+            GraphicText.setText("");
             TitleText.setText("");
             InstructionsText.setText("");
             HighScoreText.setText("");
@@ -231,7 +232,8 @@
 
             PipesTimer.stop();
 
-            AboutText.setText("");
+            DeveloperText.setText("");
+            GraphicText.setText("");
             TitleText.setText("");
             ScoreText.setText("");
             InstructionsText.setText("");
@@ -316,7 +318,8 @@
         var createRain = function createRain() {
             var emitter = Game.add.emitter(Game.world.centerX, 0, 400);
             emitter.width = Game.world.width;
-            emitter.angle = 0;
+            emitter.height = Game.world.height;
+            emitter.angle = 10;
             emitter.makeParticles('rain');
             emitter.maxParticleScale = 0.5;
             emitter.minParticleScale = 0.1;
@@ -324,28 +327,41 @@
             emitter.setXSpeed(-5, 5);
             emitter.minRotation = 0;
             emitter.maxRotation = 0;
-            emitter.gravity = GRAVITY;
-            emitter.start(false, 1600, 5, 0);
+            emitter.gravity = GRAVITY / 4;
+            emitter.start(false, 1000, 5, 0);
         };
 
         //////////////////
         //Create clouds //
         //////////////////
         var createClouds = function createClouds() {
-            function makeNewCloud() {
+            function makeNewCloud(cloudX, startTimer) {
+                cloudX = typeof cloudX == 'undefined' ? Game.world.width : cloudX;
+                startTimer = typeof startTimer == 'undefined' ? true : false;
+
                 var cloudY = Math.random() * Game.world.height / 2,
-                    cloud = Clouds.create(Game.world.width, cloudY, 'clouds', Math.floor(21 * Math.random())),
+                    cloud = Clouds.create(cloudX, cloudY, 'clouds', Math.floor(21 * Math.random())),
                     cloudScale = 1 + Math.floor((4 * Math.random()));
 
-                cloud.alpha = 2 / cloudScale;
+                cloud.alpha = 1 / cloudScale * 2;
                 cloud.scale.setTo(cloudScale, cloudScale);
                 cloud.body.allowGravity = false;
-                cloud.body.velocity.x = -SPEED / cloudScale;
+                cloud.body.velocity.x = -SPEED / cloudScale * 0.5;
                 cloud.anchor.setTo(0, 0.5);
 
-                CloudsTimer.add(Game.rnd.integerInRange(CLOUDS_SHOW_MIN_TIME, CLOUDS_SHOW_MAX_TIME), makeNewCloud, this);
+                if (startTimer) {
+                    CloudsTimer.add(Game.rnd.integerInRange(CLOUDS_SHOW_MIN_TIME, CLOUDS_SHOW_MAX_TIME), makeNewCloud, this);
+                }
             }
+
             Clouds = Game.add.group();
+
+            var cloudX = 0;
+            while (cloudX < Game.world.width) {
+                makeNewCloud(cloudX, false);
+                cloudX += Math.floor(Math.random() * 100);
+            }
+
             CloudsTimer = Game.time.create(false);
             CloudsTimer.add(0, makeNewCloud, this);
             CloudsTimer.start();
@@ -384,7 +400,7 @@
                 var pipe = Pipes.create(Game.world.width, pipeY + (isFlipped ? -calcDifficult() : calcDifficult()) / 2, 'pipe');
 
                 pipe.body.allowGravity = false;
-                pipe.scale.setTo(2, isFlipped ? -2 : 2);
+                pipe.scale.setTo(2.5, isFlipped ? -2 : 2);
                 pipe.body.offset.y = isFlipped ? -pipe.body.height * 2 : 0;
                 pipe.body.velocity.x = -SPEED;
                 return pipe;
@@ -428,16 +444,24 @@
             TitleText.anchor.setTo(0.5, 0.5);
             TitleText.angle = 5;
 
-            AboutText = Game.add.text(Game.world.width - 10, 10, ABOUT_TEXT, {
+            DeveloperText = Game.add.text(Game.world.width / 6, 10, DEVELOPER_TEXT, {
                 font: '13px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
                 strokeThickness: 2,
                 align: 'center'
             });
-            AboutText.anchor.x = 1;
 
-            InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 3, INSTRUCTIONS_TEXT, {
+            GraphicText = Game.add.text(Game.world.width - Game.world.width / 6, 10, GRAPHIC_TEXT, {
+                font: '13px "Press Start 2P"',
+                fill: '#FFFFFF',
+                stroke: '#000000',
+                strokeThickness: 2,
+                align: 'center'
+            });
+            GraphicText.anchor.x = 1;
+
+            InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 6, INSTRUCTIONS_TEXT, {
                 font: '16px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
