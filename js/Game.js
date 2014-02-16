@@ -10,8 +10,8 @@
             PIPE_SPAWN_MIN_INTERVAL = 1000,
             PIPE_SPAWN_MAX_INTERVAL = 1500,
             AVAILABLE_SPACE_BETWEEN_PIPES = 120,
-            CLOUDS_SHOW_MIN_TIME = 5000,
-            CLOUDS_SHOW_MAX_TIME = 10000,
+            CLOUDS_SHOW_MIN_TIME = 2000,
+            CLOUDS_SHOW_MAX_TIME = 3000,
             MAX_DIFFICULT = 100,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
@@ -289,7 +289,7 @@
         ////////////////////////
         var loadAssets = function loadAssets() {
             Game.load.spritesheet('bird', 'img/bird.png', 48, 35);
-            Game.load.spritesheet('clouds', 'img/clouds.png', 128, 58);
+            Game.load.spritesheet('clouds', 'img/clouds.png', 64, 34);
             Game.load.spritesheet('rain', 'img/rain.png', 12, 13);
 
             Game.load.image('town', 'img/town.png');
@@ -318,8 +318,8 @@
             emitter.width = Game.world.width;
             emitter.angle = 0;
             emitter.makeParticles('rain');
-            emitter.maxParticleScale = 1;
-            emitter.minParticleScale = 0.5;
+            emitter.maxParticleScale = 0.5;
+            emitter.minParticleScale = 0.1;
             emitter.setYSpeed(300, 500);
             emitter.setXSpeed(-5, 5);
             emitter.minRotation = 0;
@@ -335,7 +335,7 @@
             function makeNewCloud() {
                 var cloudY = Math.random() * Game.world.height / 2,
                     cloud = Clouds.create(Game.world.width, cloudY, 'clouds', Math.floor(21 * Math.random())),
-                    cloudScale = 1 + Math.floor((3 * Math.random()));
+                    cloudScale = 1 + Math.floor((4 * Math.random()));
 
                 cloud.alpha = 2 / cloudScale;
                 cloud.scale.setTo(cloudScale, cloudScale);
