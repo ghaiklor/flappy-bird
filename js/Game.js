@@ -110,7 +110,6 @@
             isScorePosted = false;
 
             createBackground();
-            createRain();
             createClouds();
             createTown();
             createPipes(false);
@@ -362,7 +361,6 @@
         var loadAssets = function loadAssets() {
             Game.load.spritesheet('bird', 'img/bird.png', 48, 35);
             Game.load.spritesheet('clouds', 'img/clouds.png', 64, 34);
-            Game.load.spritesheet('rain', 'img/rain.png', 12, 13);
 
             Game.load.image('town', 'img/town.png');
             Game.load.image('pipe', 'img/pipe.png');
@@ -382,25 +380,6 @@
             Background.beginFill(0x53BECE, 1);
             Background.drawRect(0, 0, Game.world.width, Game.world.height);
             Background.endFill();
-        };
-
-        ////////////////
-        //Create Rain //
-        ////////////////
-        var createRain = function createRain() {
-            var emitter = Game.add.emitter(Game.world.centerX, 0, 400);
-            emitter.width = Game.world.width;
-            emitter.height = Game.world.height;
-            emitter.angle = 10;
-            emitter.makeParticles('rain');
-            emitter.maxParticleScale = 0.5;
-            emitter.minParticleScale = 0.1;
-            emitter.setYSpeed(300, 500);
-            emitter.setXSpeed(-5, 5);
-            emitter.minRotation = 0;
-            emitter.maxRotation = 0;
-            emitter.gravity = GRAVITY / 4;
-            emitter.start(false, 1000, 5, 0);
         };
 
         //////////////////
@@ -627,7 +606,6 @@
             });
         });
     };
-
 
     WebFont.load({
         google: {
