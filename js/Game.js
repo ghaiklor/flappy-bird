@@ -32,7 +32,8 @@
             Bird,
             Town,
             FlapSound, ScoreSound, HurtSound,
-            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreText, LoadingText;
+            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreText, LoadingText,
+            Leaderboard;
 
         //////////////////////////////////
         //VARIABLES FOR GAME-MANAGEMENT //
@@ -237,7 +238,21 @@
             TitleText.setText("");
             ScoreText.setText("");
             InstructionsText.setText("");
-            HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\n\nYOUR SCORE: " + gameScore);
+            HighScoreText.setText("");
+
+            Leaderboard.post({
+                score: gameScore
+            }, function() {
+                Leaderboard.show({
+                    sort: 'desc',
+                    // cumulative: false,
+                    best: true,
+                    // limit: 10,
+                    // self: false,
+                    // friends: false,
+                    // showPersonal: false
+                });
+            });
 
             Bird.angle = 180;
             Bird.animations.stop();
@@ -516,6 +531,12 @@
         Game.state.add('GameOver', GameOverState, false);
 
         Game.state.start('Boot');
+
+        Clay.ready(function() {
+            Leaderboard = new Clay.Leaderboard({
+                id: 2835
+            });
+        });
     };
 
 
@@ -527,4 +548,5 @@
             GameInitialize();
         }
     });
+
 })();
