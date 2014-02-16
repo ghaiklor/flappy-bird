@@ -294,7 +294,7 @@
         //////////////////////
         var createBackground = function createBackground() {
             Background = Game.add.graphics(0, 0);
-            Background.beginFill(0x66CCCC, 1);
+            Background.beginFill(0x53BECE, 1);
             Background.drawRect(0, 0, Game.world.width, Game.world.height);
             Background.endFill();
         };
@@ -344,7 +344,7 @@
         //Create Fence //
         /////////////////
         var createTown = function createTown() {
-            Town = Game.add.tileSprite(0, Game.world.height - 64, Game.world.width, 64, 'town');
+            Town = Game.add.tileSprite(0, Game.world.height - 128, Game.world.width, 128, 'town');
             Town.tileScale.setTo(2, 2);
         };
 
