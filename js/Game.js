@@ -114,7 +114,6 @@
             Bird.body.gravity.y = 0;
             Bird.animations.play('flying');
 
-
             TitleText.setText(TITLE_TEXT);
             DeveloperText.setText(DEVELOPER_TEXT);
             GraphicText.setText(GRAPHIC_TEXT);
@@ -128,20 +127,11 @@
                 birdFlap();
                 Game.state.start('Game', false, false);
             });
-
-            Pipes.removeAll();
-            FreeSpacesInPipes.removeAll();
         };
 
         MainMenuState.update = function() {
             Bird.y = (Game.world.height / 2) + 32 * Math.cos(Game.time.now / 500);
             Bird.x = (Game.world.width / 10) + 64 * Math.sin(Game.time.now / 2000);
-
-            Clouds.forEachAlive(function(cloud) {
-                if (cloud.x + cloud.width < Game.world.bounds.left) {
-                    cloud.kill();
-                }
-            });
 
             Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
             TitleText.angle = 5 * Math.cos(Game.time.now / 100);
@@ -172,6 +162,14 @@
         };
 
         GameState.update = function() {
+            Game.physics.overlap(Bird, Pipes, function() {
+                Game.state.start('GameOver', false, false);
+            });
+
+            if (Bird.body.bottom >= Game.world.bounds.bottom || Bird.body.top <= Game.world.bounds.top) {
+                Game.state.start('GameOver', false, false);
+            }
+
             Bird.angle = (90 * (BIRD_FLAP + Bird.body.velocity.y) / BIRD_FLAP) - 180;
             if (Bird.angle < -30) {
                 Bird.angle = -30;
@@ -179,27 +177,7 @@
                 Bird.angle = 30;
             }
 
-            if (Bird.body.bottom >= Game.world.bounds.bottom || Bird.body.top <= Game.world.bounds.top) {
-                Game.state.start('GameOver', false, false);
-            }
-
-            Game.physics.overlap(Bird, Pipes, function() {
-                Game.state.start('GameOver', false, false);
-            });
-
             Game.physics.overlap(Bird, FreeSpacesInPipes, addScore);
-
-            Clouds.forEachAlive(function(cloud) {
-                if (cloud.x + cloud.width < Game.world.bounds.left) {
-                    cloud.kill();
-                }
-            });
-
-            Pipes.forEachAlive(function(pipe) {
-                if (pipe.x + pipe.width < Game.world.bounds.left) {
-                    pipe.kill();
-                }
-            });
 
             Town.tilePosition.x -= Game.time.physicsElapsed * getModifiedSpeed() / 5;
             ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
@@ -332,19 +310,6 @@
             }
         };
 
-        ///////////////////
-        // Get highscore //
-        ///////////////////
-        var getHighscore = function getHighscore(score) {
-            var highscore = window.localStorage.getItem('highscore');
-            if (score > highscore || highscore === null) {
-                highscore = score;
-                window.localStorage.setItem('highscore', highscore);
-            }
-
-            return highscore;
-        };
-
         //////////////////////////////////////////
         //Get modified speed basic on gameScore //
         //////////////////////////////////////////
@@ -415,6 +380,10 @@
                 cloud.body.velocity.x = -SPEED / cloudScale * 0.5;
                 cloud.anchor.setTo(0, 0.5);
 
+                cloud.events.onOutOfBounds.add(function(cloud) {
+                    cloud.kill();
+                });
+
                 if (startTimer) {
                     CloudsTimer.add(Game.rnd.integerInRange(CLOUDS_SHOW_MIN_TIME, CLOUDS_SHOW_MAX_TIME), makeNewCloud, this);
                 }
@@ -438,7 +407,6 @@
         /////////////////
         var createTown = function createTown() {
             Town = Game.add.tileSprite(0, Game.world.height - 128, Game.world.width, 128, 'town');
-            // Town.tileScale.setTo(2, 2);
         };
 
         ////////////////
@@ -469,6 +437,11 @@
                 pipe.scale.setTo(2.5, isFlipped ? -2 : 2);
                 pipe.body.offset.y = isFlipped ? -pipe.body.height * 2 : 0;
                 pipe.body.velocity.x = -getModifiedSpeed();
+
+                pipe.events.onOutOfBounds.add(function(pipe) {
+                    pipe.kill();
+                });
+
                 return pipe;
             }
 
@@ -482,7 +455,6 @@
                 spaceInPipe.height = Game.world.height;
                 spaceInPipe.body.allowGravity = false;
                 spaceInPipe.body.velocity.x = -getModifiedSpeed();
-
 
                 var newTime = Game.rnd.integerInRange(PIPE_SPAWN_MIN_INTERVAL, PIPE_SPAWN_MAX_INTERVAL) - getModifiedSpeed() * 2;
                 PipesTimer.add(newTime < PIPE_SPAWN_MIN_INTERVAL ? PIPE_SPAWN_MIN_INTERVAL : newTime, makePipes, this);
