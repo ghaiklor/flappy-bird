@@ -12,7 +12,7 @@
             AVAILABLE_SPACE_BETWEEN_PIPES = 120,
             CLOUDS_SHOW_MIN_TIME = 3000,
             CLOUDS_SHOW_MAX_TIME = 5000,
-            MAX_DIFFICULT = 50,
+            MAX_DIFFICULT = 100,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
             HIGHSCORE_TITLE = "HIGHSCORES",
@@ -487,7 +487,7 @@
             }
 
             function makePipes() {
-                var pipeY = ((Game.world.height - 16 - calcDifficult() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 6,
+                var pipeY = ((Game.world.height - 16 - calcDifficult() / 2) / 2) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * Game.world.height / 5,
                     bottomPipe = makeNewPipe(pipeY),
                     topPipe = makeNewPipe(pipeY, true),
                     spaceInPipe = FreeSpacesInPipes.create(topPipe.x + topPipe.width, 0);
