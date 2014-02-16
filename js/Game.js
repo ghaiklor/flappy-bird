@@ -233,6 +233,8 @@
         var GameOverState = new Phaser.State();
 
         GameOverState.create = function() {
+            getScore();
+
             Game.input.onDown.remove(birdFlap);
             Game.input.onDown.add(HighScoreStateClick);
 
@@ -258,29 +260,9 @@
             HighScoreText.setText(LOADING_TEXT);
             MainMenuText.setText(BACK_TO_MENU_TEXT);
 
-            Leaderboard.fetch({
-                sort: 'desc',
-                best: true
-            }, function(results) {
-                var text = "";
-                for (var i in results) {
-                    if (results.hasOwnProperty(i)) {
-                        text += results[i].rank + '. ' + results[i].name + ' ' + results[i].score + '\n\n';
-                    }
-                }
-                HighScoreText.setText(text);
-            });
-
             Bird.angle = 180;
             Bird.animations.stop();
             Bird.frame = 3;
-
-            // setTimeout(function() {
-            //     InstructionsText.setText(BACK_TO_MENU_TEXT);
-            //     Game.input.onDown.addOnce(function() {
-            //         Game.state.start('MainMenu', true, false);
-            //     });
-            // }, 2000);
         };
 
         GameOverState.update = function() {
@@ -315,10 +297,19 @@
                 score: gameScore
             }, function() {
                 HighScoreText.setText(LOADING_TEXT);
-                Leaderboard.fetch({
-                    sort: 'desc',
-                    best: true
-                }, function(results) {
+                getScore();
+            });
+        };
+
+        ////////////////////////////////////////////
+        //Load Highscores from Clay and render it //
+        ////////////////////////////////////////////
+        var getScore = function getScore() {
+            Leaderboard.fetch({
+                sort: 'desc',
+                best: true
+            }, function(results) {
+                if (Game.state.current == 'GameOver') {
                     var text = "";
                     for (var i in results) {
                         if (results.hasOwnProperty(i)) {
@@ -326,7 +317,7 @@
                         }
                     }
                     HighScoreText.setText(text);
-                });
+                }
             });
         };
 
@@ -610,6 +601,7 @@
         //INIT CORE //
         //////////////
         var Game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.CANVAS, SCENE);
+        Game.antialias = false;
         Game.state.add('Boot', BootGameState, false);
         Game.state.add('Preloader', PreloaderGameState, false);
         Game.state.add('MainMenu', MainMenuState, false);
@@ -634,5 +626,4 @@
             GameInitialize();
         }
     });
-
 })();
