@@ -3,7 +3,7 @@
         ///////////////////
         //GAME CONSTANTS //
         ///////////////////
-        var DEBUG_MODE = true,
+        var DEBUG_MODE = false,
             SPEED = 180,
             GRAVITY = 1800,
             BIRD_FLAP = 550,
@@ -65,27 +65,6 @@
         };
 
         PreloaderGameState.create = function() {
-            var tween = Game.add.tween(LoadingText).to({
-                alpha: 0
-            }, 1000, Phaser.Easing.Linear.None, true);
-
-            tween.onComplete.add(function() {
-                Game.state.start('MainMenu');
-            }, this);
-        };
-
-        //////////////////////
-        //State - Main Menu //
-        //////////////////////
-        var MainMenuState = new Phaser.State();
-
-        MainMenuState.preload = function() {
-            loadAssets();
-        };
-
-        MainMenuState.create = function() {
-            gameScore = 0;
-
             createBackground();
             createRain();
             createClouds();
@@ -95,10 +74,41 @@
             createTexts();
             createSounds();
 
+            var tween = Game.add.tween(LoadingText).to({
+                alpha: 0
+            }, 1000, Phaser.Easing.Linear.None, true);
+
+            tween.onComplete.add(function() {
+                Game.state.start('MainMenu', false, false);
+            }, this);
+        };
+
+        //////////////////////
+        //State - Main Menu //
+        //////////////////////
+        var MainMenuState = new Phaser.State();
+
+        MainMenuState.create = function() {
+            gameScore = 0;
+
+            Bird.angle = 0;
+            Bird.body.allowGravity = false;
+            Bird.reset(Game.world.width / 10, Game.world.height / 2);
+            Bird.animations.play('flying');
+
+            AboutText.setText(ABOUT_TEXT);
+            TitleText.setText(TITLE_TEXT);
+            InstructionsText.setText(INSTRUCTIONS_TEXT);
+            ScoreText.setText("");
+            HighScoreText.setText("");
+
             Game.input.onDown.addOnce(function() {
                 birdFlap();
                 Game.state.start('Game', false, false);
             });
+
+            Towers.removeAll();
+            FreeSpacesInTowers.removeAll();
         };
 
         MainMenuState.update = function() {
@@ -125,11 +135,10 @@
         GameState.create = function() {
             createTowers(true);
 
-            TitleText.renderable = false;
-            InstructionsText.renderable = false;
-            AboutText.renderable = false;
-            HighScoreText.renderable = false;
-            ScoreText.renderable = true;
+            AboutText.setText("");
+            TitleText.setText("");
+            InstructionsText.setText("");
+            HighScoreText.setText("");
             ScoreText.setText(gameScore);
 
             Bird.body.allowGravity = true;
@@ -167,6 +176,7 @@
                 }
             });
 
+            Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
             ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
         };
 
@@ -210,21 +220,20 @@
 
             TowersTimer.stop();
 
-            TitleText.renderable = false;
-            AboutText.renderable = false;
-            ScoreText.renderable = false;
-            HighScoreText.renderable = true;
-            HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\nYOUR SCORE: " + gameScore);
+            AboutText.setText("");
+            TitleText.setText("");
+            ScoreText.setText("");
+            InstructionsText.setText("");
+            HighScoreText.setText("HIGHSCORE: " + getHighscore(gameScore) + "\n\nYOUR SCORE: " + gameScore);
 
             Bird.angle = 180;
             Bird.animations.stop();
             Bird.frame = 3;
 
             setTimeout(function() {
-                InstructionsText.renderable = true;
                 InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
                 Game.input.onDown.addOnce(function() {
-                    Game.state.start('MainMenu', true, false);
+                    Game.state.start('MainMenu', false, false);
                 });
             }, 2000);
         };
