@@ -600,8 +600,12 @@
         //////////////
         //INIT CORE //
         //////////////
+
         var Game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.CANVAS, SCENE);
+        Game.raf = new Phaser.RequestAnimationFrame(Game);
         Game.antialias = false;
+        Game.raf.start();
+
         Game.state.add('Boot', BootGameState, false);
         Game.state.add('Preloader', PreloaderGameState, false);
         Game.state.add('MainMenu', MainMenuState, false);
