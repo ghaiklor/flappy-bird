@@ -9,7 +9,7 @@
             BIRD_FLAP = 550,
             PIPE_SPAWN_MIN_INTERVAL = 1200,
             PIPE_SPAWN_MAX_INTERVAL = 3000,
-            AVAILABLE_SPACE_BETWEEN_PIPES = 120,
+            AVAILABLE_SPACE_BETWEEN_PIPES = 130,
             CLOUDS_SHOW_MIN_TIME = 3000,
             CLOUDS_SHOW_MAX_TIME = 5000,
             MAX_DIFFICULT = 100,
@@ -468,7 +468,7 @@
         //////////////////
         var createPipes = function createPipes(timer) {
             function calcDifficult() {
-                return AVAILABLE_SPACE_BETWEEN_PIPES + 60 * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / MAX_DIFFICULT);
+                return AVAILABLE_SPACE_BETWEEN_PIPES + (Math.floor(Math.random() * AVAILABLE_SPACE_BETWEEN_PIPES)) * ((gameScore > MAX_DIFFICULT ? MAX_DIFFICULT : MAX_DIFFICULT - gameScore) / (MAX_DIFFICULT + 1));
             }
 
             function makeNewPipe(pipeY, isFlipped) {
