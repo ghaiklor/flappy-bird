@@ -28,7 +28,7 @@
             Clouds, CloudsTimer,
             Pipes, PipesTimer, FreeSpacesInPipes,
             Bird,
-            Fence,
+            Town,
             FlapSound, ScoreSound, HurtSound,
             TitleText, AboutText, ScoreText, InstructionsText, HighScoreText, LoadingText;
 
@@ -65,15 +65,6 @@
         };
 
         PreloaderGameState.create = function() {
-            createBackground();
-            createRain();
-            createClouds();
-            createPipes(false);
-            createFence();
-            createBird();
-            createTexts();
-            createSounds();
-
             var tween = Game.add.tween(LoadingText).to({
                 alpha: 0
             }, 1000, Phaser.Easing.Linear.None, true);
@@ -81,6 +72,15 @@
             tween.onComplete.add(function() {
                 Game.state.start('MainMenu', false, false);
             }, this);
+
+            createBackground();
+            createRain();
+            createClouds();
+            createTown();
+            createPipes(false);
+            createBird();
+            createTexts();
+            createSounds();
         };
 
         //////////////////////
@@ -123,7 +123,7 @@
 
             // TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
             // InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
-            Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
+            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
             TitleText.angle = 5 * Math.cos(Game.time.now / 100);
         };
 
@@ -154,7 +154,7 @@
                 Bird.angle = 30;
             }
 
-            if (Bird.body.bottom >= Game.world.bounds.bottom - 32 || Bird.body.top <= Game.world.bounds.top) {
+            if (Bird.body.bottom >= Game.world.bounds.bottom || Bird.body.top <= Game.world.bounds.top) {
                 Game.state.start('GameOver', false, false);
             }
 
@@ -176,7 +176,7 @@
                 }
             });
 
-            Fence.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
+            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
             ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
         };
 
@@ -281,7 +281,7 @@
             Game.load.spritesheet('clouds', 'img/clouds.png', 128, 64);
             Game.load.spritesheet('rain', 'img/rain.png', 17, 17);
 
-            Game.load.image('fence', 'img/fence.png');
+            Game.load.image('town', 'img/town.png');
             Game.load.image('pipe', 'img/pipe.png');
 
             Game.load.audio('flap', 'wav/flap.wav');
@@ -294,7 +294,7 @@
         //////////////////////
         var createBackground = function createBackground() {
             Background = Game.add.graphics(0, 0);
-            Background.beginFill(0x4E5B61, 1);
+            Background.beginFill(0x66CCCC, 1);
             Background.drawRect(0, 0, Game.world.width, Game.world.height);
             Background.endFill();
         };
@@ -343,9 +343,9 @@
         /////////////////
         //Create Fence //
         /////////////////
-        var createFence = function createFence() {
-            Fence = Game.add.tileSprite(0, Game.world.height - 32, Game.world.width, 32, 'fence');
-            Fence.tileScale.setTo(2, 2);
+        var createTown = function createTown() {
+            Town = Game.add.tileSprite(0, Game.world.height - 64, Game.world.width, 64, 'town');
+            Town.tileScale.setTo(2, 2);
         };
 
         ////////////////
