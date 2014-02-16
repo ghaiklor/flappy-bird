@@ -7,7 +7,7 @@
             SPEED = 180,
             GRAVITY = 1800,
             BIRD_FLAP = 550,
-            PIPE_SPAWN_MIN_INTERVAL = 1000,
+            PIPE_SPAWN_MIN_INTERVAL = 1200,
             PIPE_SPAWN_MAX_INTERVAL = 3000,
             AVAILABLE_SPACE_BETWEEN_PIPES = 120,
             CLOUDS_SHOW_MIN_TIME = 3000,
