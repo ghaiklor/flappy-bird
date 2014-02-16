@@ -439,7 +439,9 @@
                 spaceInPipe.body.allowGravity = false;
                 spaceInPipe.body.velocity.x = -getModifiedSpeed();
 
-                PipesTimer.add(Game.rnd.integerInRange(PIPE_SPAWN_MIN_INTERVAL, PIPE_SPAWN_MAX_INTERVAL), makePipes, this);
+
+                var newTime = Game.rnd.integerInRange(PIPE_SPAWN_MIN_INTERVAL, PIPE_SPAWN_MAX_INTERVAL) - getModifiedSpeed() * 2;
+                PipesTimer.add(newTime < PIPE_SPAWN_MIN_INTERVAL ? PIPE_SPAWN_MIN_INTERVAL : newTime, makePipes, this);
             }
 
             if (timer) {
