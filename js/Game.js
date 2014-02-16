@@ -97,6 +97,16 @@
         var MainMenuState = new Phaser.State();
 
         MainMenuState.create = function() {
+            function click() {
+                if (Phaser.Rectangle.contains(SoundEnabledIcon.bounds, Game.input.x, Game.input.y)) {
+                    toogleSound();
+                } else {
+                    birdFlap();
+                    Game.input.onDown.remove(click);
+                    Game.state.start('Game', false, false);
+                }
+            }
+
             isScorePosted = false;
 
             createBackground();
@@ -125,10 +135,7 @@
             HighScoreText.setText("");
             PostScoreText.setText("");
 
-            Game.input.onDown.addOnce(function() {
-                birdFlap();
-                Game.state.start('Game', false, false);
-            });
+            Game.input.onDown.add(click);
         };
 
         MainMenuState.update = function() {
@@ -156,6 +163,8 @@
             HighScoreText.setText("");
             PostScoreText.setText("");
             ScoreText.setText(gameScore);
+            SoundEnabledIcon.renderable = false;
+            SoundDisabledIcon.renderable = false;
 
             Bird.body.allowGravity = true;
             Bird.body.gravity.y = GRAVITY;
@@ -164,19 +173,19 @@
         };
 
         GameState.update = function() {
+            Bird.angle = (90 * (BIRD_FLAP + Bird.body.velocity.y) / BIRD_FLAP) - 180;
+            if (Bird.angle < -30) {
+                Bird.angle = -30;
+            } else if (Bird.angle > 30) {
+                Bird.angle = 30;
+            }
+
             Game.physics.overlap(Bird, Pipes, function() {
                 Game.state.start('GameOver', false, false);
             });
 
             if (Bird.body.bottom >= Game.world.bounds.bottom || Bird.body.top <= Game.world.bounds.top) {
                 Game.state.start('GameOver', false, false);
-            }
-
-            Bird.angle = (90 * (BIRD_FLAP + Bird.body.velocity.y) / BIRD_FLAP) - 180;
-            if (Bird.angle < -30) {
-                Bird.angle = -30;
-            } else if (Bird.angle > 30) {
-                Bird.angle = 30;
             }
 
             Game.physics.overlap(Bird, FreeSpacesInPipes, addScore);
@@ -214,6 +223,7 @@
             getScore();
 
             Game.input.onDown.remove(birdFlap);
+
             setTimeout(function() {
                 Game.input.onDown.add(HighScoreStateClick);
             }, 1000);
@@ -240,6 +250,9 @@
             PostScoreText.setText(HIGHSCORE_SUBMIT);
             HighScoreTitleText.setText(HIGHSCORE_TITLE);
             HighScoreText.setText(LOADING_TEXT);
+
+            SoundEnabledIcon.renderable = false;
+            SoundDisabledIcon.renderable = false;
 
             Bird.angle = 180;
             Bird.animations.stop();
@@ -325,6 +338,22 @@
         //////////////////////////////////////////
         var getModifiedSpeed = function getModifiedSpeed() {
             return SPEED + gameScore * 5;
+        };
+
+        /////////////////////////
+        //Toogle sound in game //
+        /////////////////////////
+        var toogleSound = function toogleSound() {
+            if (isSoundEnabled) {
+                SoundDisabledIcon.renderable = true;
+                SoundEnabledIcon.renderable = false;
+                isSoundEnabled = false;
+            } else {
+                SoundEnabledIcon.renderable = true;
+                SoundDisabledIcon.renderable = false;
+                isSoundEnabled = true;
+                FlapSound.play();
+            }
         };
 
         ////////////////////////
@@ -564,27 +593,11 @@
         //Create Sounds //
         //////////////////
         var createSounds = function createSounds() {
-            function disableSound() {
-                SoundDisabledIcon.renderable = true;
-                SoundEnabledIcon.renderable = false;
-                isSoundEnabled = false;
-            }
-
-            function enableSound() {
-                SoundEnabledIcon.renderable = true;
-                SoundDisabledIcon.renderable = false;
-                isSoundEnabled = true;
-            }
-
             SoundEnabledIcon = Game.add.sprite(10, 10, 'soundOn');
-            SoundEnabledIcon.inputEnabled = true;
-            // SoundEnabledIcon.input
-            // SoundEnabledIcon.events.onInputDown = disableSound;
+            SoundEnabledIcon.renderable = isSoundEnabled ? true : false;
 
             SoundDisabledIcon = Game.add.sprite(10, 10, 'soundOff');
-            SoundDisabledIcon.inputEnabled = true;
-            SoundDisabledIcon.renderable = false;
-            // SoundDisabledIcon.events.onInputDown = enableSound;
+            SoundDisabledIcon.renderable = isSoundEnabled ? false : true;
 
             FlapSound = Game.add.audio('flap');
             ScoreSound = Game.add.audio('score');
