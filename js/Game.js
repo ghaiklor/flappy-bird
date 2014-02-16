@@ -10,8 +10,8 @@
             PIPE_SPAWN_MIN_INTERVAL = 1000,
             PIPE_SPAWN_MAX_INTERVAL = 3000,
             AVAILABLE_SPACE_BETWEEN_PIPES = 120,
-            CLOUDS_SHOW_MIN_TIME = 1000,
-            CLOUDS_SHOW_MAX_TIME = 3000,
+            CLOUDS_SHOW_MIN_TIME = 3000,
+            CLOUDS_SHOW_MAX_TIME = 5000,
             MAX_DIFFICULT = 50,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
@@ -188,7 +188,7 @@
                 }
             });
 
-            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
+            Town.tilePosition.x -= Game.time.physicsElapsed * getModifiedSpeed() / 5;
             ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
         };
 
@@ -284,6 +284,13 @@
             }
 
             return highscore;
+        };
+
+        //////////////////////////////////////////
+        //Get modified speed basic on gameScore //
+        //////////////////////////////////////////
+        var getModifiedSpeed = function getModifiedSpeed() {
+            return SPEED + gameScore * 5;
         };
 
         ////////////////////////
@@ -402,7 +409,7 @@
                 pipe.body.allowGravity = false;
                 pipe.scale.setTo(2.5, isFlipped ? -2 : 2);
                 pipe.body.offset.y = isFlipped ? -pipe.body.height * 2 : 0;
-                pipe.body.velocity.x = -SPEED;
+                pipe.body.velocity.x = -getModifiedSpeed();
                 return pipe;
             }
 
@@ -415,7 +422,7 @@
                 spaceInPipe.width = 2;
                 spaceInPipe.height = Game.world.height;
                 spaceInPipe.body.allowGravity = false;
-                spaceInPipe.body.velocity.x = -SPEED;
+                spaceInPipe.body.velocity.x = -getModifiedSpeed();
 
                 PipesTimer.add(Game.rnd.integerInRange(PIPE_SPAWN_MIN_INTERVAL, PIPE_SPAWN_MAX_INTERVAL), makePipes, this);
             }
