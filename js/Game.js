@@ -3,15 +3,16 @@
         ///////////////////
         //GAME CONSTANTS //
         ///////////////////
-        var DEBUG_MODE = false,
+        var DEBUG_MODE = true,
             SPEED = 180,
             GRAVITY = 1800,
             BIRD_FLAP = 550,
-            PIPE_SPAWN_INTERVAL = 2000,
-            AVAILABLE_SPACE_BETWEEN_PIPES = 150,
+            PIPE_SPAWN_MIN_INTERVAL = 1000,
+            PIPE_SPAWN_MAX_INTERVAL = 2000,
+            AVAILABLE_SPACE_BETWEEN_PIPES = 130,
             CLOUDS_SHOW_MIN_TIME = 5000,
             CLOUDS_SHOW_MAX_TIME = 10000,
-            MAX_DIFFICULT = 50,
+            MAX_DIFFICULT = 100,
             SCENE = '',
             TITLE_TEXT = "FLAPPY BIRD",
             INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
@@ -72,15 +73,10 @@
             tween.onComplete.add(function() {
                 Game.state.start('MainMenu', false, false);
             }, this);
+        };
 
-            createBackground();
-            createRain();
-            createClouds();
-            createTown();
-            createPipes(false);
-            createBird();
-            createTexts();
-            createSounds();
+        PreloaderGameState.update = function() {
+            LoadingText.angle = 5 * Math.cos(Game.time.now / 100);
         };
 
         //////////////////////
@@ -89,11 +85,21 @@
         var MainMenuState = new Phaser.State();
 
         MainMenuState.create = function() {
+            createBackground();
+            createRain();
+            createClouds();
+            createTown();
+            createPipes(false);
+            createBird();
+            createTexts();
+            createSounds();
+
             gameScore = 0;
 
             Bird.angle = 0;
-            Bird.body.allowGravity = false;
             Bird.reset(Game.world.width / 10, Game.world.height / 2);
+            Bird.body.allowGravity = false;
+            Bird.body.gravity.y = 0;
             Bird.animations.play('flying');
 
             AboutText.setText(ABOUT_TEXT);
@@ -112,8 +118,8 @@
         };
 
         MainMenuState.update = function() {
-            Bird.y = (Game.world.height / 2) + 32 * Math.cos(Game.time.now / 1000);
-            Bird.x = (Game.world.width / 10) + 32 * Math.sin(Game.time.now / 3000);
+            Bird.y = (Game.world.height / 2) + 32 * Math.cos(Game.time.now / 500);
+            Bird.x = (Game.world.width / 10) + 64 * Math.sin(Game.time.now / 2000);
 
             Clouds.forEachAlive(function(cloud) {
                 if (cloud.x + cloud.width < Game.world.bounds.left) {
@@ -123,7 +129,7 @@
 
             // TitleText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
             // InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
-            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
+            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
             TitleText.angle = 5 * Math.cos(Game.time.now / 100);
         };
 
@@ -142,6 +148,7 @@
             ScoreText.setText(gameScore);
 
             Bird.body.allowGravity = true;
+            Bird.body.gravity.y = GRAVITY;
 
             Game.input.onDown.add(birdFlap);
         };
@@ -176,7 +183,7 @@
                 }
             });
 
-            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 2;
+            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
             ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
         };
 
@@ -233,7 +240,7 @@
             setTimeout(function() {
                 InstructionsText.setText(INSTRUCTIONS_TEXT_GAME_OVER);
                 Game.input.onDown.addOnce(function() {
-                    Game.state.start('MainMenu', false, false);
+                    Game.state.start('MainMenu', true, false);
                 });
             }, 2000);
         };
@@ -357,7 +364,7 @@
             Bird.animations.add('flying', [0, 1, 2, 3, 2, 1, 0], 20, true);
             Bird.animations.play('flying');
             Bird.body.collideWorldBounds = true;
-            Bird.body.gravity.y = GRAVITY;
+            Bird.body.gravity.y = 0;
             Bird.body.allowGravity = false;
         };
 
@@ -390,12 +397,12 @@
                 spaceInPipe.body.allowGravity = false;
                 spaceInPipe.body.velocity.x = -SPEED;
 
-                PipesTimer.add(PIPE_SPAWN_INTERVAL, makePipes, this);
+                PipesTimer.add(Game.rnd.integerInRange(PIPE_SPAWN_MIN_INTERVAL, PIPE_SPAWN_MAX_INTERVAL), makePipes, this);
             }
 
             if (timer) {
                 PipesTimer = Game.time.create(false);
-                PipesTimer.add(PIPE_SPAWN_INTERVAL, makePipes, this);
+                PipesTimer.add(0, makePipes, this);
                 PipesTimer.start();
             } else {
                 Pipes = Game.add.group();
