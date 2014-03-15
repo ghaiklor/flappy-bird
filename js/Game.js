@@ -3,27 +3,42 @@
         ///////////////////
         //GAME CONSTANTS //
         ///////////////////
-        var DEBUG_MODE = false,
-            SPEED = 180,
+        var DEBUG_MODE = true,
+
+            GAME_SPEED = 180,
             GRAVITY = 1800,
             BIRD_FLAP = 550,
+
             PIPE_SPAWN_MIN_INTERVAL = 1200,
             PIPE_SPAWN_MAX_INTERVAL = 3000,
             AVAILABLE_SPACE_BETWEEN_PIPES = 130,
-            CLOUDS_SHOW_MIN_TIME = 3000,
-            CLOUDS_SHOW_MAX_TIME = 5000,
+
+            CLOUD_SPAWN_MIN_TIME = 3000,
+            CLOUD_SPAWN_MAX_TIME = 10000,
+
             MAX_DIFFICULT = 100,
-            SCENE = '',
+
+            SCENE = 'game',
+
             TITLE_TEXT = "FLAPPY BIRD",
+            INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
+
             HIGHSCORE_TITLE = "HIGHSCORES",
             HIGHSCORE_SUBMIT = "POST SCORE",
-            INSTRUCTIONS_TEXT = "TOUCH\nTO\nFLY",
-            BACK_TO_MENU_TEXT = "MAIN MENU",
-            DEVELOPER_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com",
-            GRAPHIC_TEXT = "Graphic\nDmitry Lezhenko\ndima.lezhenko@gmail.com",
+
+            DEVELOPER_COPYRIGHT_TEXT = "Developer\nEugene Obrezkov\nghaiklor@gmail.com",
+            GRAPHIC_COPYRIGHT_TEXT = "Graphic\nDmitry Lezhenko\ndima.lezhenko@gmail.com",
             LOADING_TEXT = "LOADING...",
-            WINDOW_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
-            WINDOW_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
+            CANVAS_WIDTH = window.innerWidth || document.documentElement.clientWidth || document.getElementsByTagName('body')[0].clientWidth,
+            CANVAS_HEIGHT = window.innerHeight || document.documentElement.clientHeight || document.getElementsByTagName('body')[0].clientHeight;
+
+        if (CANVAS_WIDTH > 720) {
+            CANVAS_WIDTH = 720;
+        }
+
+        if (CANVAS_HEIGHT > 1280) {
+            CANVAS_HEIGHT = 1280;
+        }
 
         /////////////////////////////////////////////
         //HELPER VARIABLES FOR SAVING GAME-OBJECTS //
@@ -35,7 +50,7 @@
             Town,
             FlapSound, ScoreSound, HurtSound,
             SoundEnabledIcon, SoundDisabledIcon,
-            TitleText, DeveloperText, GraphicText, ScoreText, InstructionsText, HighScoreTitleText, HighScoreText, PostScoreText, LoadingText,
+            TitleText, InstructionsText, DeveloperCopyrightText, GraphicCopyrightText, ScoreText, HighScoreTitleText, HighScoreText, PostScoreText, LoadingText,
             PostScoreClickArea,
             isScorePosted = false,
             isSoundEnabled = true,
@@ -64,13 +79,9 @@
             Game.state.start('Preloader', false, false);
         };
 
-        BootGameState.update = function() {
-            LoadingText.angle = 5 * Math.cos(Game.time.now / 100);
-        };
-
-        /////////////////////////////////////
-        //State - Preloader (Loading Assets) //
-        /////////////////////////////////////
+        //////////////////////////////////////
+        //State - Preloader (Loading Assets)//
+        //////////////////////////////////////
         var PreloaderGameState = new Phaser.State();
 
         PreloaderGameState.preload = function() {
@@ -85,10 +96,6 @@
             tween.onComplete.add(function() {
                 Game.state.start('MainMenu', false, false);
             }, this);
-        };
-
-        PreloaderGameState.update = function() {
-            LoadingText.angle = 5 * Math.cos(Game.time.now / 100);
         };
 
         //////////////////////
@@ -120,14 +127,14 @@
             gameScore = 0;
 
             Bird.angle = 0;
-            Bird.reset(Game.world.width / 10, Game.world.height / 2);
+            Bird.reset(Game.world.width / 4, Game.world.height / 2);
             Bird.body.allowGravity = false;
             Bird.body.gravity.y = 0;
             Bird.animations.play('flying');
 
             TitleText.setText(TITLE_TEXT);
-            DeveloperText.setText(DEVELOPER_TEXT);
-            GraphicText.setText(GRAPHIC_TEXT);
+            DeveloperCopyrightText.setText(DEVELOPER_COPYRIGHT_TEXT);
+            GraphicCopyrightText.setText(GRAPHIC_COPYRIGHT_TEXT);
             InstructionsText.setText(INSTRUCTIONS_TEXT);
             ScoreText.setText("");
             HighScoreTitleText.setText("");
@@ -139,11 +146,9 @@
 
         MainMenuState.update = function() {
             Bird.y = (Game.world.height / 2) + 32 * Math.cos(Game.time.now / 500);
-            Bird.x = (Game.world.width / 10) + 64 * Math.sin(Game.time.now / 2000);
+            Bird.x = (Game.world.width / 4) + 64 * Math.sin(Game.time.now / 2000);
 
-            Town.tilePosition.x -= Game.time.physicsElapsed * SPEED / 5;
-            TitleText.angle = 5 * Math.cos(Game.time.now / 100);
-            InstructionsText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
+            Town.tilePosition.x -= Game.time.physicsElapsed * GAME_SPEED / 5;
         };
 
         /////////////////////////////////////
@@ -155,8 +160,8 @@
             createPipes(true);
 
             TitleText.setText("");
-            DeveloperText.setText("");
-            GraphicText.setText("");
+            DeveloperCopyrightText.setText("");
+            GraphicCopyrightText.setText("");
             InstructionsText.setText("");
             HighScoreTitleText.setText("");
             HighScoreText.setText("");
@@ -190,7 +195,6 @@
             Game.physics.overlap(Bird, FreeSpacesInPipes, addScore);
 
             Town.tilePosition.x -= Game.time.physicsElapsed * getModifiedSpeed() / 5;
-            ScoreText.angle = 10 * Math.sin(Game.time.now / 100);
         };
 
         GameState.render = function() {
@@ -242,8 +246,8 @@
             PipesTimer.stop();
 
             TitleText.setText("");
-            DeveloperText.setText("");
-            GraphicText.setText("");
+            DeveloperCopyrightText.setText("");
+            GraphicCopyrightText.setText("");
             InstructionsText.setText("");
             ScoreText.setText("YOUR SCORE: " + gameScore);
             PostScoreText.setText(HIGHSCORE_SUBMIT);
@@ -256,12 +260,6 @@
             Bird.angle = 180;
             Bird.animations.stop();
             Bird.frame = 3;
-        };
-
-        GameOverState.update = function() {
-            ScoreText.angle = 1 * Math.sin(Game.time.now / 100);
-            HighScoreTitleText.angle = 1 * Math.cos(Game.time.now / 100);
-            PostScoreText.scale.setTo(1 + 0.1 * Math.cos(Game.time.now / 100), 1 + 0.1 * Math.sin(Game.time.now / 100));
         };
 
         ///////////////////
@@ -290,39 +288,45 @@
         //Post score to Clay //
         ///////////////////////
         var postScore = function postScore() {
-            Leaderboard.post({
-                score: gameScore
-            }, function() {
-                HighScoreText.setText(LOADING_TEXT);
-                getScore();
-            });
+            if (Leaderboard) {
+                Leaderboard.post({
+                    score: gameScore
+                }, function() {
+                    HighScoreText.setText(LOADING_TEXT);
+                    getScore();
+                });
+            } else {
+                HighScoreText.setText('Some error occured');
+            }
         };
 
         ////////////////////////////////////////////
         //Load Highscores from Clay and render it //
         ////////////////////////////////////////////
         var getScore = function getScore() {
-            Leaderboard.fetch({
-                sort: 'desc',
-                best: true
-            }, function(results) {
-                if (Game.state.current == 'GameOver') {
-                    var text = "";
-                    for (var i in results) {
-                        if (results.hasOwnProperty(i)) {
-                            text += results[i].rank + '. ' + results[i].name + ' ' + results[i].score + '\n\n';
+            if (Leaderboard) {
+                Leaderboard.fetch({
+                    sort: 'desc',
+                    best: true,
+                    limit: 5
+                }, function(results) {
+                    if (Game.state.current == 'GameOver') {
+                        var text = "";
+                        for (var i in results) {
+                            if (results.hasOwnProperty(i)) {
+                                text += results[i].rank + '. ' + results[i].name + ' ' + results[i].score + '\n\n';
+                            }
                         }
+                        HighScoreText.setText(text);
                     }
-                    HighScoreText.setText(text);
-                }
-            });
+                });
+            } else {
+                HighScoreText.setText('Some error occured');
+            }
         };
 
         var HighScoreStateClick = function HighScoreStateClick() {
-            if (PostScoreClickArea && Phaser.Rectangle.contains(PostScoreClickArea, Game.input.x, Game.input.y) && !isScorePosted) {
-                if (isSoundEnabled) {
-                    FlapSound.play();
-                }
+            if (Game.state.current == 'GameOver' && Phaser.Rectangle.contains(PostScoreClickArea, Game.input.x, Game.input.y) && !isScorePosted) {
                 postScore();
                 PostScoreText.setText("");
                 isScorePosted = true;
@@ -333,10 +337,10 @@
         };
 
         //////////////////////////////////////////
-        //Get modified speed basic on gameScore //
+        //Get modified GAME_SPEED basic on gameScore //
         //////////////////////////////////////////
         var getModifiedSpeed = function getModifiedSpeed() {
-            return SPEED + gameScore * 5;
+            return GAME_SPEED + gameScore * 5;
         };
 
         /////////////////////////
@@ -397,7 +401,7 @@
                 cloud.alpha = 1 / cloudScale * 2;
                 cloud.scale.setTo(cloudScale, cloudScale);
                 cloud.body.allowGravity = false;
-                cloud.body.velocity.x = -SPEED / cloudScale * 0.5;
+                cloud.body.velocity.x = -GAME_SPEED / cloudScale * 0.5;
                 cloud.anchor.setTo(0, 0.5);
 
                 cloud.events.onOutOfBounds.add(function(cloud) {
@@ -405,7 +409,7 @@
                 });
 
                 if (startTimer) {
-                    CloudsTimer.add(Game.rnd.integerInRange(CLOUDS_SHOW_MIN_TIME, CLOUDS_SHOW_MAX_TIME), makeNewCloud, this);
+                    CloudsTimer.add(Game.rnd.integerInRange(CLOUD_SPAWN_MIN_TIME, CLOUD_SPAWN_MAX_TIME), makeNewCloud, this);
                 }
             }
 
@@ -502,24 +506,24 @@
                 align: 'center'
             });
             TitleText.anchor.setTo(0.5, 0.5);
-            TitleText.angle = 5;
 
-            DeveloperText = Game.add.text(Game.world.width / 6, 10, DEVELOPER_TEXT, {
-                font: '13px "Press Start 2P"',
-                fill: '#FFFFFF',
-                stroke: '#000000',
-                strokeThickness: 2,
+            DeveloperCopyrightText = Game.add.text(Game.world.width - 20, Game.world.height - 20, DEVELOPER_COPYRIGHT_TEXT, {
+                font: '11px "Press Start 2P"',
+                fill: '#423B30',
+                stroke: '#FFFFFF',
+                strokeThickness: 1,
                 align: 'center'
             });
+            DeveloperCopyrightText.anchor.setTo(1, 1);
 
-            GraphicText = Game.add.text(Game.world.width - Game.world.width / 6, 10, GRAPHIC_TEXT, {
-                font: '13px "Press Start 2P"',
-                fill: '#FFFFFF',
-                stroke: '#000000',
-                strokeThickness: 2,
+            GraphicCopyrightText = Game.add.text(20, Game.world.height - 20, GRAPHIC_COPYRIGHT_TEXT, {
+                font: '11px "Press Start 2P"',
+                fill: '#423B30',
+                stroke: '#FFFFFF',
+                strokeThickness: 1,
                 align: 'center'
             });
-            GraphicText.anchor.x = 1;
+            GraphicCopyrightText.anchor.setTo(0, 1);
 
             InstructionsText = Game.add.text(Game.world.width / 2, Game.world.height - Game.world.height / 6, INSTRUCTIONS_TEXT, {
                 font: '16px "Press Start 2P"',
@@ -530,8 +534,8 @@
             });
             InstructionsText.anchor.setTo(0.5, 0.5);
 
-            ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 4, "", {
-                font: '32px "Press Start 2P"',
+            ScoreText = Game.add.text(Game.world.width / 2, Game.world.height / 6, "", {
+                font: '24px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
                 strokeThickness: 3,
@@ -539,8 +543,8 @@
             });
             ScoreText.anchor.setTo(0.5, 0.5);
 
-            HighScoreTitleText = Game.add.text(Game.world.width / 2, Game.world.height / 6, "", {
-                font: '32px "Press Start 2P"',
+            HighScoreTitleText = Game.add.text(Game.world.width / 2, Game.world.height / 10, "", {
+                font: '28px "Press Start 2P"',
                 fill: '#FFFFFF',
                 stroke: '#000000',
                 strokeThickness: 3,
@@ -565,7 +569,7 @@
                 align: 'center'
             });
             PostScoreText.anchor.setTo(0.5, 0.5);
-            PostScoreClickArea = new Phaser.Rectangle(PostScoreText.x - PostScoreText.width / 2, PostScoreText.y - PostScoreText.height / 2, PostScoreText.width, PostScoreText.height);
+            PostScoreClickArea = new Phaser.Rectangle(PostScoreText.x - PostScoreText.width * 5, PostScoreText.y - PostScoreText.height, PostScoreText.width + 200, PostScoreText.height * 4);
         };
 
         //////////////////
@@ -586,11 +590,7 @@
         //////////////
         //INIT CORE //
         //////////////
-
-        var Game = new Phaser.Game(WINDOW_WIDTH, WINDOW_HEIGHT, Phaser.CANVAS, SCENE);
-        Game.raf = new Phaser.RequestAnimationFrame(Game);
-        Game.antialias = false;
-        Game.raf.start();
+        var Game = new Phaser.Game(CANVAS_WIDTH, CANVAS_HEIGHT, Phaser.CANVAS, SCENE, null, false, false);
 
         Game.state.add('Boot', BootGameState, false);
         Game.state.add('Preloader', PreloaderGameState, false);
