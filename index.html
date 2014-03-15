@@ -1,34 +1,41 @@
 <!DOCTYPE html>
-<head>
-	<meta charset="utf-8">
-	<title>Flappy Bird</title>
-	<link rel="shortcut icon" href="/favicon.ico" />
-	<style type="text/css">
-		* {
-			margin: 0;
-			padding: 0;
-		}
-	</style>
-</head>
-<body>
-	<script type="text/javascript">
-		var Clay = Clay || {};
-		Clay.gameKey = "gflappybird";
-		Clay.readyFunctions = [];
-		Clay.ready = function(fn) {
-			Clay.readyFunctions.push(fn);
-		};
 
-		(function() {
-			var clay = document.createElement("script");
-			clay.async = true;
-			clay.src = ("https:" == document.location.protocol ? "https://" : "http://") + "clay.io/api/api-leaderboard-achievement.js"; 
-			var tag = document.getElementsByTagName("script")[0];
-			tag.parentNode.insertBefore(clay, tag);
-		})();
-	</script>
-	<script src="//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js"></script>
-	<script src="//cdnjs.cloudflare.com/ajax/libs/phaser/1.1.4/phaser.min.js"></script>
-	<script src="js/Game.js"></script>
+<head>
+    <meta charset="utf-8">
+    <title>Flappy Bird</title>
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <style type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    #game {
+        margin-left: 25%;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="game"></div>
+    <script type="text/javascript">
+    var Clay = Clay || {};
+    Clay.gameKey = "gflappybird";
+    Clay.readyFunctions = [];
+    Clay.ready = function(fn) {
+        Clay.readyFunctions.push(fn);
+    };
+
+    (function() {
+        var clay = document.createElement("script");
+        clay.async = true;
+        clay.src = ("https:" == document.location.protocol ? "https://" : "http://") + "clay.io/api/api-leaderboard-achievement.js";
+        var tag = document.getElementsByTagName("script")[0];
+        tag.parentNode.insertBefore(clay, tag);
+    })();
+    </script>
+    <script src="//ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/phaser/1.1.4/phaser.min.js"></script>
+    <script src="js/Game.js"></script>
 </body>
+
 </html>
