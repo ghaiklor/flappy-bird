@@ -3,7 +3,7 @@
         ///////////////////
         //GAME CONSTANTS //
         ///////////////////
-        var DEBUG_MODE = true,
+        var DEBUG_MODE = false,
 
             GAME_SPEED = 180,
             GRAVITY = 1800,
